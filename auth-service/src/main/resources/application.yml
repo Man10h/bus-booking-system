@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: auth-service
+
+  cloud:
+    config:
+      enabled: false
+
+  datasource:
+    username: root
+    password: Manh2004
+    url: jdbc:mysql://localhost:3306/auth
+
+  liquibase:
+    change-log: classpath:/db/changelog/appchange-log.xml
+    liquibase-schema: auth
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+private_key:
+  path: D:\workspace\bus-booking-system\auth-service\private.pem
+
+public_key:
+  path: D:\workspace\bus-booking-system\auth-service\public.pem
+
+usersService:
+  url: http://localhost:8001/users
+
+server:
+  port: 8000
