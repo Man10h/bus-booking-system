@@ -178,5 +178,18 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
+    @Override
+    public void promoteUserToOperator(String userId) {
+        User user = getUserById(userId);
+        if(!user.getEnabled()){
+            throw new AccountNotEnabledException("Account not enabled");
+        }
+        Role role = roleRepository.findById(2L).orElseThrow(
+                () -> new RoleNotFoundException("Role not found")
+        );
+        user.setRole(role);
+        userRepository.save(user);
+    }
+
 
 }

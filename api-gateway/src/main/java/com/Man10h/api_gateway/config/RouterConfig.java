@@ -21,6 +21,11 @@ public class RouterConfig {
                                 .path("/users/**")
                                 .uri("lb://user-service:8001")
                 )
+                .route("core-service",
+                        r -> r
+                                .path("/core/**")
+                                .uri("lb://core-service:8002")
+                )
                 .build();
     }
 }

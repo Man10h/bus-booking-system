@@ -2,6 +2,7 @@ package com.Man10h.api_gateway.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -62,6 +63,8 @@ public class SecurityConfig {
                         .pathMatchers("/users/register").permitAll()
                         .pathMatchers("/users/verify/**").permitAll()
                         .pathMatchers("/users/check-credentials").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/core/routes**").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/core/routes/**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->

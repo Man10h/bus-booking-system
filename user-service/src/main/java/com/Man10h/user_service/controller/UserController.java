@@ -80,8 +80,8 @@ public class UserController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/")
-    public ResponseEntity<ApiResponse<Page<UserResponse>>> getUsers(
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<UserResponse>>> findAllUsers(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size) {
         Page<UserResponse> data = userService.findAllUsers(PageRequest.of(page, size));
@@ -92,6 +92,12 @@ public class UserController {
     @PutMapping("/{userId}/lock")
     public ResponseEntity<ApiResponse<UserResponse>> lockUser(@PathVariable String userId) {
         userService.lockUser(userId);
+        return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
+    }
+
+    @PatchMapping("/{userId}/promote-operator")
+    public ResponseEntity<ApiResponse<?>> promoteUserToOperator(@PathVariable String userId) {
+        userService.promoteUserToOperator(userId);
         return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
     }
 }

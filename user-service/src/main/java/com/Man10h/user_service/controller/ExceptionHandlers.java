@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.LocalDateTime;
+
 @RestControllerAdvice
 public class ExceptionHandlers {
 
@@ -16,7 +18,8 @@ public class ExceptionHandlers {
                 new ErrorResponse(
                         HttpStatus.CONFLICT.getReasonPhrase(),
                         HttpStatus.CONFLICT.value(),
-                        e.getMessage()
+                        e.getMessage(),
+                        LocalDateTime.now()
                 )
         );
     }
@@ -28,7 +31,8 @@ public class ExceptionHandlers {
                 new ErrorResponse(
                         HttpStatus.NOT_FOUND.getReasonPhrase(),
                         HttpStatus.NOT_FOUND.value(),
-                        e.getMessage()
+                        e.getMessage(),
+                        LocalDateTime.now()
                 )
         );
     }
@@ -39,7 +43,8 @@ public class ExceptionHandlers {
                 new ErrorResponse(
                         HttpStatus.NOT_FOUND.getReasonPhrase(),
                         HttpStatus.NOT_FOUND.value(),
-                        e.getMessage()
+                        e.getMessage(),
+                        LocalDateTime.now()
                 )
         );
     }
@@ -50,7 +55,8 @@ public class ExceptionHandlers {
                 new ErrorResponse(
                         HttpStatus.CONFLICT.getReasonPhrase(),
                         HttpStatus.CONFLICT.value(),
-                        e.getMessage()
+                        e.getMessage(),
+                        LocalDateTime.now()
                 )
         );
     }
@@ -61,7 +67,8 @@ public class ExceptionHandlers {
                 new ErrorResponse(
                         HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                         HttpStatus.UNAUTHORIZED.value(),
-                        e.getMessage()
+                        e.getMessage(),
+                        LocalDateTime.now()
                 )
         );
     }
@@ -72,7 +79,8 @@ public class ExceptionHandlers {
                 new ErrorResponse(
                         HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                         HttpStatus.UNAUTHORIZED.value(),
-                        e.getMessage()
+                        e.getMessage(),
+                        LocalDateTime.now()
                 )
         );
     }
