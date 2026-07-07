@@ -53,6 +53,12 @@ public class OperatorController {
     }
 
 
+    @PreAuthorize("hasAuthority('SCOPE_core.read')")
+    @GetMapping("/operators/by-user/{userId}")
+    public ResponseEntity<ApiResponse<OperatorResponse>> getOperatorByUserId(@PathVariable("userId") String userId){
+        OperatorResponse data = operatorService.getOperatorByUserId(userId);
+        return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
+    }
 
     /*
     * tim kiem operator

@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: payment-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payment
+    username: postgres
+    password: Manh2004
+    driver-class-name: org.postgresql.Driver
+
+
+  security:
+    oauth2:
+      resource server:
+        jwt:
+          jwk-set-uri: http://localhost:8000/auth/.well-known/jwks.json
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+    fetch-registry: true
+    register-with-eureka: true
+
+server:
+  port: 8003
+
+payment:
+  providers:
+    VNPAY:
+      paymentUrl: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      returnlUrl: https://payment.example.com/api/v1/payments/vnpay/ipn
+
+services:
+  payment:
+    clientId: clientId
+    clientSecret: clientSecret
+    scope: core.read
+
+  core:
+    url: http://localhost:8002/core
+
+  auth:
+    url: http://localhost:8000/auth

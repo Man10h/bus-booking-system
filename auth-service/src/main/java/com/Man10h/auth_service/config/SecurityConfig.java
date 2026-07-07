@@ -7,7 +7,16 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 @EnableWebSecurity
@@ -15,6 +24,42 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+
+            List<GrantedAuthority> authorities = new ArrayList<>();
+
+            // scopes
+            String scope = jwt.getClaimAsString("scope");
+            if (scope != null) {
+                Arrays.stream(scope.split(" "))
+                        .map(s -> new SimpleGrantedAuthority("SCOPE_" + s))
+                        .forEach(authorities::add);
+            }
+
+            // roles
+            List<String> roles = jwt.getClaimAsStringList("roles");
+            if (roles != null) {
+                roles.stream()
+                        .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
+                        .forEach(authorities::add);
+            }
+
+            return authorities;
+        });
+
+        return converter;
+    }
+
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -22,6 +67,9 @@ public class SecurityConfig {
                 .cors(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(req -> req.anyRequest().permitAll())
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(
+                        jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())
+                ))
                 .build();
     }
 }

@@ -15,6 +15,7 @@
         <module>auth-service</module>
         <module>user-service</module>
         <module>core-service</module>
+        <module>payment-service</module>
     </modules>
     <properties>
         <maven.compiler.source>21</maven.compiler.source>

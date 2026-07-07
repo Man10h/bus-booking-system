@@ -6,6 +6,12 @@ spring:
     config:
       enabled: false
 
+  security:
+    oauth2:
+      resource server:
+        jwt:
+          jwk-set-uri: http://localhost:8000/auth/.well-known/jwks.json
+
   datasource:
     username: root
     password: Manh2004
@@ -14,6 +20,10 @@ spring:
   liquibase:
     change-log: classpath:/db/changelog/appchange-log.xml
     liquibase-schema: auth
+
+  jpa:
+    hibernate:
+      ddl-auto: update
 
 eureka:
   client:
@@ -28,8 +38,13 @@ private_key:
 public_key:
   path: D:\workspace\bus-booking-system\auth-service\public.pem
 
-usersService:
-  url: http://localhost:8001/users
+service:
+  auth:
+    client-id: payment-service
+    client-secret: your-secret
+
+  users:
+    url: http://localhost:8001/users
 
 server:
   port: 8000

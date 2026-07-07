@@ -1,39 +1,63 @@
 package com.Man10h.auth_service.service.impl;
 
 import com.Man10h.auth_service.controller.exception.AuthenticationFailedException;
+import com.Man10h.auth_service.controller.exception.InvalidClientIdException;
 import com.Man10h.auth_service.controller.exception.InvalidTokenException;
+import com.Man10h.auth_service.controller.exception.ServiceClientNotFoundException;
 import com.Man10h.auth_service.model.entities.RefreshToken;
+import com.Man10h.auth_service.model.entities.ServiceClient;
+import com.Man10h.auth_service.model.request.ServiceClientRequest;
 import com.Man10h.auth_service.model.request.UserLoginRequest;
 import com.Man10h.auth_service.model.response.ApiResponse;
 import com.Man10h.auth_service.model.response.LoginResponse;
+import com.Man10h.auth_service.model.response.ServiceClientResponse;
 import com.Man10h.auth_service.model.response.UserResponse;
 import com.Man10h.auth_service.repository.RefreshTokenRepository;
+import com.Man10h.auth_service.repository.ServiceClientRepository;
 import com.Man10h.auth_service.service.AuthService;
 import com.Man10h.auth_service.service.TokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
+    private final ServiceClientRepository serviceClientRepository;
     @Value(
-            "${usersService.url}"
+            "${service.users.url}"
     )
     private String usersServiceUrl;
 
     private final TokenService tokenService;
     private final RestTemplate restTemplate;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public ServiceClientResponse toServiceClientResponse(ServiceClient serviceClient) {
+        return new ServiceClientResponse(
+                serviceClient.getId(),
+                serviceClient.getClientId(),
+                serviceClient.getClientSecret(),
+                serviceClient.getScopes(),
+                serviceClient.getActive()
+        );
+    }
 
     @Transactional
     public LoginResponse login(UserLoginRequest request) {
@@ -75,5 +99,48 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponse getTokenByRefreshToken(String refreshToken) {
         //not done
         return null;
+    }
+
+    @Transactional
+    public ServiceClientResponse createServiceClient(ServiceClientRequest request) {
+
+        Optional<ServiceClient> optional = serviceClientRepository.findByClientId(request.clientId());
+        if(optional.isPresent()){
+            throw new InvalidClientIdException("Client id already exists");
+        }
+        ServiceClient serviceClient = ServiceClient.builder()
+                .clientId(request.clientId())
+                .clientSecret(passwordEncoder.encode(request.clientSecret()))
+                .scopes("operator.read")
+                .active(true)
+                .build();
+        serviceClientRepository.save(serviceClient);
+
+
+        return toServiceClientResponse(serviceClient);
+    }
+
+    @Transactional
+    public ServiceClientResponse updateServiceClient(Long id, ServiceClientRequest request) {
+
+        Optional<ServiceClient> optional = serviceClientRepository.findById(id);
+        if(optional.isEmpty()){
+            throw new ServiceClientNotFoundException("Service client not found");
+        }
+        ServiceClient serviceClient = optional.get();
+        serviceClient.setClientSecret(passwordEncoder.encode(request.clientSecret()));
+        serviceClient.setClientId(request.clientId());
+        serviceClient.setScopes(request.scope());
+
+        serviceClientRepository.save(serviceClient);
+
+
+        return toServiceClientResponse(serviceClient);
+    }
+
+    @Override
+    public List<ServiceClientResponse> getAllServiceClients() {
+        return serviceClientRepository.findAll()
+                .stream().map(this::toServiceClientResponse).collect(Collectors.toList());
     }
 }

@@ -155,4 +155,16 @@ public class ExceptionHandlers {
                 )
         );
     }
+
+    @ExceptionHandler(BookingNotFoundException.class)
+    public ResponseEntity<ErrorResponse> bookingNotFoundException(BookingNotFoundException ex){
+        return ResponseEntity.ok(
+                new ErrorResponse(
+                        HttpStatus.NOT_FOUND.getReasonPhrase(),
+                        HttpStatus.NOT_FOUND.value(),
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                )
+        );
+    }
 }
