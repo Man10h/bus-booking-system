@@ -28,6 +28,7 @@ public class Booking {
     private BigDecimal totalAmount;
     private LocalDateTime paymentDeadline;
     private LocalDateTime createAt;
+    private String operatorId;
 
     @Enumerated(EnumType.STRING)
     private BookingStatus status;

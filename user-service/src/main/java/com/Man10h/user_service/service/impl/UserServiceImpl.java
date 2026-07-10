@@ -135,6 +135,19 @@ public class UserServiceImpl implements UserService {
         return toUserResponse(user);
     }
 
+    @Override
+    public UserResponse getUserByEmail(String email) {
+        Optional<User> optional = userRepository.findByEmail(email);
+        if(optional.isEmpty()){
+            throw new UserNotFoundException("User not found");
+        }
+        User user = optional.get();
+        if(!user.isEnabled()){
+            throw new AccountNotEnabledException("User is not enabled");
+        }
+        return toUserResponse(user);
+    }
+
     @Transactional
     public UserResponse updateUser(String userId, UserUpdateRequest request) {
         User user = getUserById(userId);

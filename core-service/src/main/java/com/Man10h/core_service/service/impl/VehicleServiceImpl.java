@@ -5,6 +5,8 @@ import com.Man10h.core_service.model.entities.Operator;
 import com.Man10h.core_service.model.entities.Seat;
 import com.Man10h.core_service.model.entities.Vehicle;
 import com.Man10h.core_service.model.entities.VehicleType;
+import com.Man10h.core_service.model.enums.ScheduleSeatStatus;
+import com.Man10h.core_service.model.enums.ScheduleStatus;
 import com.Man10h.core_service.model.enums.SeatStatus;
 import com.Man10h.core_service.model.enums.VehicleStatus;
 import com.Man10h.core_service.model.request.CreateVehicleRequest;
@@ -13,10 +15,7 @@ import com.Man10h.core_service.model.response.OperatorResponse;
 import com.Man10h.core_service.model.response.SeatResponse;
 import com.Man10h.core_service.model.response.VehicleResponse;
 import com.Man10h.core_service.model.response.VehicleTypeResponse;
-import com.Man10h.core_service.repository.OperatorRepository;
-import com.Man10h.core_service.repository.SeatRepository;
-import com.Man10h.core_service.repository.VehicleRepository;
-import com.Man10h.core_service.repository.VehicleTypeRepository;
+import com.Man10h.core_service.repository.*;
 import com.Man10h.core_service.service.VehicleService;
 import com.Man10h.core_service.util.SeatGenerator;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +36,8 @@ public class VehicleServiceImpl implements VehicleService {
     private final VehicleTypeRepository vehicleTypeRepository;
     private final SeatGenerator seatGenerator;
     private final SeatRepository seatRepository;
+    private final ScheduleRepository scheduleRepository;
+    private final ScheduleSeatRepository scheduleSeatRepository;
 
     public Vehicle getVehicleDetailById(Long id) {
         Optional<Vehicle> optional = vehicleRepository.getDetailById(id);
@@ -82,6 +83,7 @@ public class VehicleServiceImpl implements VehicleService {
           vehicle.getModel(),
           vehicle.getTotalSeats(),
           vehicle.getDescription(),
+          vehicle.getStatus(),
           vehicleTypeResponse,
           operatorResponse
         );
@@ -141,12 +143,21 @@ public class VehicleServiceImpl implements VehicleService {
     }
 
     @Transactional
-    public void updateStatus(Long id, String userId, String status) {
-        Vehicle vehicle = getVehicleDetailById(id);
+    public void updateVehicleStatus(Long id, String userId, String status) {
+        Vehicle vehicle = vehicleRepository.getDetailWithSeatsById(id).orElseThrow(() -> new VehicleNotFoundException("Vehicle not found"));
         if(!vehicle.getOperator().getUserId().equals(userId)){
             throw new AccessDeniedException("You not owned this vehicle");
         }
-        vehicle.setStatus(VehicleStatus.valueOf(status));
+        VehicleStatus vehicleStatus = VehicleStatus.valueOf(status);
+        if(vehicleStatus == vehicle.getStatus()){
+            return;
+        }
+        if(vehicleStatus != VehicleStatus.ACTIVE){
+            if(scheduleRepository.existsByVehicle_IdAndStatusIn(id, List.of(ScheduleStatus.OPEN, ScheduleStatus.RUNNING))){
+                throw new IllegalStateException("Schedule is already open or running");
+            }
+        }
+        vehicle.setStatus(vehicleStatus);
         vehicleRepository.save(vehicle);
     }
 
@@ -169,7 +180,7 @@ public class VehicleServiceImpl implements VehicleService {
                         seat.getRow(),
                         seat.getCol(),
                         seat.getSeatType().toString(),
-                        seat.getStatus().toString(),
+                        seat.getStatus(),
                         seat.getIsVip()
                 )
         ).toList();
@@ -182,7 +193,35 @@ public class VehicleServiceImpl implements VehicleService {
             throw new SeatNotFoundException("Seat not found");
         }
         Seat seat = optional.get();
-        seat.setStatus(SeatStatus.valueOf(status));
+        SeatStatus seatStatus = SeatStatus.valueOf(status);
+        if(seat.getStatus() == seatStatus){
+            return;
+        }
+
+        if(seatStatus == SeatStatus.INACTIVE){
+            if(scheduleSeatRepository.existsBySeat_IdAndSchedule_StatusInAndStatusIn(id,
+                    List.of(ScheduleStatus.OPEN, ScheduleStatus.RUNNING),
+                    List.of(ScheduleSeatStatus.HELD, ScheduleSeatStatus.BOOKED
+            ))){
+                throw new IllegalStateException("Schedule seat is held/booked");
+            }
+            seat.getScheduleSeatList().forEach(scheduleSeat -> {
+                if(scheduleSeat.getStatus() == ScheduleSeatStatus.AVAILABLE && scheduleSeat.getSchedule().getStatus() == ScheduleStatus.OPEN){
+                    scheduleSeat.setStatus(ScheduleSeatStatus.BLOCKED);
+                }
+            });
+        }
+
+        if (seatStatus == SeatStatus.ACTIVE) {
+            seat.getScheduleSeatList().forEach(scheduleSeat -> {
+                if (scheduleSeat.getStatus() == ScheduleSeatStatus.BLOCKED
+                        && scheduleSeat.getSchedule().getStatus() == ScheduleStatus.OPEN) {
+
+                    scheduleSeat.setStatus(ScheduleSeatStatus.AVAILABLE);
+                }
+            });
+        }
+        seat.setStatus(seatStatus);
         seatRepository.save(seat);
     }
 

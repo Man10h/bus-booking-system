@@ -1,13 +1,24 @@
 package com.Man10h.payment_service.service.impl;
 
+import com.Man10h.payment_service.controller.exceptions.MerchantNotFound;
 import com.Man10h.payment_service.model.entities.Merchant;
+import com.Man10h.payment_service.model.entities.OutboxEvent;
 import com.Man10h.payment_service.model.entities.Payment;
-import com.Man10h.payment_service.model.request.CreatePaymentRequest;
-import com.Man10h.payment_service.service.VNPayService;
+import com.Man10h.payment_service.model.enums.OutboxStatus;
+import com.Man10h.payment_service.model.enums.PaymentStatus;
+import com.Man10h.payment_service.model.enums.Provider;
+import com.Man10h.payment_service.model.response.PaymentResponse;
+import com.Man10h.payment_service.repository.MerchantRepository;
+import com.Man10h.payment_service.repository.OutboxRepository;
+import com.Man10h.payment_service.repository.PaymentRepository;
+import com.Man10h.payment_service.service.PaymentMethod;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -22,13 +33,39 @@ import java.util.TreeMap;
 
 @Service
 @RequiredArgsConstructor
-public class VNPayServiceImpl implements VNPayService {
+public class VNPayServiceImpl implements PaymentMethod {
+
 
     @Value("${payment.providers.VNPAY.returnlUrl}")
     private String returnUrl;
 
     @Value("${payment.providers.VNPAY.paymentUrl}")
     private String paymentUrl;
+
+    @Value("${kafka.topics.payment-success}")
+    private String paymentSuccessTopic;
+
+    @Value("${kafka.topics.payment-failed}")
+    private String paymentFailedTopic;
+
+    private final PaymentRepository paymentRepository;
+    private final ObjectMapper objectMapper;
+    private final MerchantRepository merchantRepository;
+    private final OutboxRepository outboxRepository;
+
+    public PaymentResponse toPaymentResponse(Payment payment) {
+        return new PaymentResponse(
+                payment.getId(),
+                payment.getAmount(),
+                payment.getStatus(),
+                payment.getProvider(),
+                payment.getTransactionId(),
+                payment.getTxnRef(),
+                payment.getCreatedAt(),
+                payment.getPaidAt(),
+                payment.getBookingId()
+        );
+    }
 
     public String getClientIp(HttpServletRequest request) {
 
@@ -45,6 +82,11 @@ public class VNPayServiceImpl implements VNPayService {
         }
 
         return request.getRemoteAddr();
+    }
+
+    @Override
+    public Provider getProvider() {
+        return Provider.VNPAY;
     }
 
     @Override
@@ -92,7 +134,7 @@ public class VNPayServiceImpl implements VNPayService {
         params.put("vnp_CreateDate", now.format(formatter));
         params.put("vnp_ExpireDate", expire.format(formatter));
 
-        String hashData = buildQuery(params, false);
+        String hashData = buildQuery(params, true);
 
         String secureHash = hmacSHA512(
                 merchant.getSecretKey(),
@@ -101,7 +143,96 @@ public class VNPayServiceImpl implements VNPayService {
 
         params.put("vnp_SecureHash", secureHash);
 
+
+        System.out.println(hashData);
+        System.out.println(secureHash);
+
         return paymentUrl + "?" + buildQuery(params, true);
+    }
+
+    @Override
+    @Transactional
+    public void processIpn(Map<String, String> params) {
+
+        String secureHash = params.remove("vnp_SecureHash");
+        params.remove("vnp_SecureHashType");
+
+        String hashData = buildQuery(new TreeMap<>(params), true);
+
+        Merchant merchant = merchantRepository.findByMerchantCode(params.get("vnp_TmnCode"))
+                .orElseThrow(() -> new MerchantNotFound("Merchant not found"));
+
+        String calculatedHash = hmacSHA512(
+                merchant.getSecretKey(),
+                hashData
+        );
+
+        if (!calculatedHash.equalsIgnoreCase(secureHash)) {
+            throw new IllegalArgumentException("Invalid checksum");
+        }
+
+        String txnRef = params.get("vnp_TxnRef");
+
+        Payment payment = paymentRepository.findByTxnRef(txnRef)
+                .orElseThrow(() -> new RuntimeException("Payment not found"));
+
+        if (!payment.getAmount()
+                .multiply(BigDecimal.valueOf(100))
+                .toBigInteger()
+                .toString()
+                .equals(params.get("vnp_Amount"))) {
+
+            throw new IllegalArgumentException("Invalid amount");
+        }
+
+        if ("00".equals(params.get("vnp_ResponseCode"))
+                && "00".equals(params.get("vnp_TransactionStatus"))) {
+
+            payment.setStatus(PaymentStatus.SUCCESS);
+            payment.setTransactionId(params.get("vnp_TransactionNo"));
+            payment.setPaidAt(LocalDateTime.now());
+
+            PaymentResponse paymentResponse = toPaymentResponse(payment);
+            //push message
+            try {
+                OutboxEvent event = OutboxEvent.builder()
+                        .source("payment")
+                        .createdAt(LocalDateTime.now())
+                        .eventType(paymentSuccessTopic)
+                        .payload(objectMapper.writeValueAsString(paymentResponse))
+                        .aggregateType("booking")
+                        .aggregateId(paymentResponse.bookingId())
+                        .retryCount(0)
+                        .status(OutboxStatus.PENDING)
+                        .build();
+
+                outboxRepository.save(event);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+
+            payment.setStatus(PaymentStatus.FAILED);
+            PaymentResponse paymentResponse = toPaymentResponse(payment);
+            //push message
+            try {
+                OutboxEvent event = OutboxEvent.builder()
+                        .source("payment")
+                        .createdAt(LocalDateTime.now())
+                        .eventType(paymentFailedTopic)
+                        .aggregateType("booking")
+                        .aggregateId(paymentResponse.bookingId())
+                        .payload(objectMapper.writeValueAsString(paymentResponse))
+                        .status(OutboxStatus.PENDING)
+                        .retryCount(0)
+                        .build();
+
+                outboxRepository.save(event);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        paymentRepository.save(payment);
     }
 
     private String buildQuery(Map<String, String> params, boolean encode) {

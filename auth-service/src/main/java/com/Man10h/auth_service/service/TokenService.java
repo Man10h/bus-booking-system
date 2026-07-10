@@ -8,4 +8,5 @@ public interface TokenService {
     public String generateUserToken(UserResponse userResponse);
     public String generateUserRefreshToken(UserResponse userResponse);
     public String generateServiceToken(ServiceTokenRequest request);
+    public String generateAuthServiceToken(ServiceTokenRequest request);
 }

@@ -111,5 +111,28 @@ public class ExceptionHandlers {
         );
     }
 
+    @ExceptionHandler(ClientIdAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> clientIdAlreadyExistsException(ClientIdAlreadyExistsException ex) {
+        return ResponseEntity.ok(
+                new ErrorResponse(
+                        HttpStatus.CONFLICT.getReasonPhrase(),
+                        HttpStatus.CONFLICT.value(),
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                )
+        );
+    }
+
+    @ExceptionHandler(RefreshTokenNotFoundException.class)
+    public ResponseEntity<ErrorResponse> refreshTokenNotFoundException(RefreshTokenNotFoundException ex) {
+        return ResponseEntity.ok(
+                new ErrorResponse(
+                        HttpStatus.NOT_FOUND.getReasonPhrase(),
+                        HttpStatus.NOT_FOUND.value(),
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                )
+        );
+    }
 
 }

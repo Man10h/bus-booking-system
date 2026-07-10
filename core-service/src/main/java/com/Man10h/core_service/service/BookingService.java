@@ -11,4 +11,7 @@ public interface BookingService {
     public BookingDetailResponse getBookingDetailById(String userId, Long bookingId);
     public Page<BookingSummaryResponse> getUserBookings(String userId, Pageable pageable);
     public BookingSummaryResponse getBookingById(Long bookingId);
+
+    public void updateBookingPaidStatus(Long bookingId);
+    public void updateBookingCancellation();
 }

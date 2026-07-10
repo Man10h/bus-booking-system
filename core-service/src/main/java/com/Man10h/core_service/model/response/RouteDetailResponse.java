@@ -12,7 +12,7 @@ public record RouteDetailResponse(
         BigDecimal distance,
         Long estimatedDurationMinutes,
         RouteStatus status,
-        String operatorName,
+        OperatorResponse operatorResponse,
         String arrivalCityName,
         String departureCityName,
         List<RouteStopResponse> routeStopResponse

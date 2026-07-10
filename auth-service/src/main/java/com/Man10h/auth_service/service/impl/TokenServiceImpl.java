@@ -15,6 +15,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -74,6 +75,7 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
+    @Cacheable(value = "service_token", key = "#request.clientId()")
     public String generateServiceToken(ServiceTokenRequest request) {
         Optional<ServiceClient> optional = serviceClientRepository.findByClientId(request.clientId());
         if(optional.isEmpty()){
@@ -87,6 +89,26 @@ public class TokenServiceImpl implements TokenService {
             throw new InvalidScopeException("Invalid Scope");
         }
 
+        JWTClaimsSet claim = new JWTClaimsSet.Builder()
+                .subject(request.clientId())
+                .claim("roles", List.of())
+                .claim("scope", request.scope())
+                .claim("token_type", "service_token")
+                .expirationTime(new Date(new Date().getTime() + 1000 * 60 * 60 * 3))
+                .build();
+        try {
+            JWSHeader header = new JWSHeader(JWSAlgorithm.RS256);
+            SignedJWT signedJWT = new SignedJWT(header, claim);
+            JWSSigner signer = new RSASSASigner(privateKey);
+            signedJWT.sign(signer);
+            return signedJWT.serialize();
+        } catch (JOSEException e) {
+            throw new GlobalException(e.getMessage());
+        }
+    }
+
+    @Override
+    public String generateAuthServiceToken(ServiceTokenRequest request) {
         JWTClaimsSet claim = new JWTClaimsSet.Builder()
                 .subject(request.clientId())
                 .claim("roles", List.of())

@@ -26,6 +26,11 @@ public class RouterConfig {
                                 .path("/core/**")
                                 .uri("lb://core-service:8002")
                 )
+                .route("payment-service",
+                        r -> r
+                                .path("/payments/**")
+                                .uri("lb://payment-service:8003")
+                )
                 .build();
     }
 }

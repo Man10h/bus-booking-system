@@ -1,6 +1,7 @@
 package com.Man10h.payment_service.service;
 
 import com.Man10h.payment_service.model.response.ApiResponse;
+import com.Man10h.payment_service.model.response.BookingSummaryResponse;
 import com.Man10h.payment_service.model.response.OperatorResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
@@ -17,4 +18,9 @@ public interface CoreService {
             @PathVariable("userId") String userId,
             @RequestHeader("Authorization") String authorization
     );
+
+    @GetMapping("/bookings/{id}")
+    public ResponseEntity<ApiResponse<BookingSummaryResponse>> getBookingById(@PathVariable Long id,
+                                                                              @RequestHeader("Authorization") String authorization);
+
 }

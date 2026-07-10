@@ -7,6 +7,7 @@ import com.Man10h.core_service.model.entities.Schedule;
 import com.Man10h.core_service.model.entities.ScheduleSeat;
 import com.Man10h.core_service.model.enums.BookingStatus;
 import com.Man10h.core_service.model.enums.ScheduleSeatStatus;
+import com.Man10h.core_service.model.enums.ScheduleStatus;
 import com.Man10h.core_service.model.request.CreateBookingRequest;
 import com.Man10h.core_service.model.response.*;
 import com.Man10h.core_service.repository.BookingRepository;
@@ -37,17 +38,19 @@ public class BookingServiceImpl implements BookingService {
     public BookingSummaryResponse toBookingSummaryResponse(Booking booking){
         return new BookingSummaryResponse(
                 booking.getId(),
+                booking.getUserId(),
+                booking.getOperatorId(),
                 booking.getBookingCode(),
                 booking.getTotalAmount(),
                 booking.getCreateAt(),
                 booking.getPaymentDeadline(),
-                booking.getStatus().toString()
+                booking.getStatus()
         );
     }
 
     public BookingDetailResponse toBookingDetailResponse(Booking booking){
         Schedule schedule = booking.getSchedule();
-        ScheduleSummaryResponse scheduleSummaryResponse = new ScheduleSummaryResponse(schedule.getId(), schedule.getDepartureTime(), schedule.getArrivalTime(), schedule.getBasePrice(), schedule.getVipPrice(), schedule.getAvailableSeats(), schedule.getStatus().toString(),schedule.getTotalSeats());
+        ScheduleSummaryResponse scheduleSummaryResponse = new ScheduleSummaryResponse(schedule.getId(), schedule.getOperatorId(),schedule.getDepartureTime(), schedule.getArrivalTime(), schedule.getBasePrice(), schedule.getVipPrice(), schedule.getAvailableSeats(), schedule.getStatus(),schedule.getTotalSeats());
         List<ScheduleSeatResponse> scheduleSeatResponseList =
                 booking.getScheduleSeatList()
                         .stream()
@@ -59,7 +62,7 @@ public class BookingServiceImpl implements BookingService {
                                     scheduleSeat.getHeldBy(),
                                     scheduleSeat.getHeldAt(),
                                     scheduleSeat.getExpiredAt(),
-                                    scheduleSeat.getStatus().toString(),
+                                    scheduleSeat.getStatus(),
                                     new SeatResponse(
                                             scheduleSeat.getSeat().getId(),
                                             scheduleSeat.getSeat().getSeatNumber(),
@@ -67,7 +70,7 @@ public class BookingServiceImpl implements BookingService {
                                             scheduleSeat.getSeat().getRow(),
                                             scheduleSeat.getSeat().getCol(),
                                             scheduleSeat.getSeat().getSeatType().toString(),
-                                            scheduleSeat.getSeat().getStatus().toString(),
+                                            scheduleSeat.getSeat().getStatus(),
                                             scheduleSeat.getSeat().getIsVip()
                                     ));
                         }
@@ -75,11 +78,13 @@ public class BookingServiceImpl implements BookingService {
         ;
         return new BookingDetailResponse(
                 booking.getId(),
+                booking.getUserId(),
+                booking.getOperatorId(),
                 booking.getBookingCode(),
                 booking.getTotalAmount(),
                 booking.getCreateAt(),
                 booking.getPaymentDeadline(),
-                booking.getStatus().toString(),
+                booking.getStatus(),
                 scheduleSummaryResponse,
                 scheduleSeatResponseList
         );
@@ -91,7 +96,9 @@ public class BookingServiceImpl implements BookingService {
         if(optionalSchedule.isEmpty()){
             throw new ScheduleNotFoundException("Schedule not found");
         }
-
+        if(optionalSchedule.get().getStatus() != ScheduleStatus.OPEN){
+            throw new IllegalArgumentException("Schedule is not OPEN");
+        }
         List<ScheduleSeat> scheduleSeatList =  scheduleSeatRepository.findAllForUpdate(request.scheduleId(), request.scheduleSeatIds());
         if(scheduleSeatList.size() != request.scheduleSeatIds().size()) {
             throw new IllegalArgumentException("Schedule seats do not match");
@@ -111,6 +118,7 @@ public class BookingServiceImpl implements BookingService {
                 .userId(userId)
                 .bookingCode(UUID.randomUUID().toString())
                 .createAt(now)
+                .operatorId(optionalSchedule.get().getOperatorId())
                 .status(BookingStatus.PENDING_PAYMENT)
                 .schedule(optionalSchedule.get())
                 .paymentDeadline(now.plusMinutes(30))
@@ -147,5 +155,23 @@ public class BookingServiceImpl implements BookingService {
     public BookingSummaryResponse getBookingById(Long bookingId) {
         return bookingRepository.findById(bookingId).map(this::toBookingSummaryResponse)
                 .orElseThrow(() -> new BookingNotFoundException("Booking not found"));
+    }
+
+    @Transactional
+    public void updateBookingPaidStatus(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException("Booking not found"));
+        booking.setStatus(BookingStatus.PAID);
+        bookingRepository.save(booking);
+    }
+
+
+
+    @Transactional
+    public void updateBookingCancellation() {
+        LocalDateTime now = LocalDateTime.now();
+        scheduleSeatRepository.releaseExpiredSeats(now);
+
+        bookingRepository.updateBookingStatus(now);
     }
 }

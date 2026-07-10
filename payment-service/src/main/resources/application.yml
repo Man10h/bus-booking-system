@@ -3,9 +3,9 @@ spring:
     name: payment-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/payment
-    username: postgres
-    password: Manh2004
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/payment}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:Manh2004}
     driver-class-name: org.postgresql.Driver
 
 
@@ -13,35 +13,59 @@ spring:
     oauth2:
       resource server:
         jwt:
-          jwk-set-uri: http://localhost:8000/auth/.well-known/jwks.json
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI:http://localhost:8000/auth/.well-known/jwks.json}
   jpa:
     hibernate:
       ddl-auto: update
 
+  kafka:
+    bootstrap-servers: localhost:9092
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 1
+
+
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL:http://localhost:8761/eureka}
     fetch-registry: true
     register-with-eureka: true
 
 server:
   port: 8003
 
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+
 payment:
   providers:
     VNPAY:
-      paymentUrl: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-      returnlUrl: https://payment.example.com/api/v1/payments/vnpay/ipn
+      paymentUrl: ${PAYMENT_PROVIDERS_VNPAY_PAYMENT_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+      returnlUrl: ${PAYMENT_PROVIDERS_VNPAY_RETURN_URL:https://payment.example.com/api/v1/payments/vnpay/ipn}
 
 services:
   payment:
-    clientId: clientId
-    clientSecret: clientSecret
-    scope: core.read
+    clientId: ${SERVICES_PAYMENT_CLIENT_ID:payment}
+    clientSecret: ${SERVICE_PAYMENT_CLIENT_SECRET:payment}
+    scope: ${SERVICE_PAYMENT_CLIENT_SCOPE:core.read}
 
   core:
-    url: http://localhost:8002/core
+    url: ${SERVICES_CORE_URL:http://localhost:8002/core}
 
   auth:
-    url: http://localhost:8000/auth
+    url: ${SERVICES_AUTH_URL:http://localhost:8002/auth}
+
+kafka:
+  topics:
+    payment-success: ${KAFKA_TOPICS_PAYMENT_SUCCESS:payment.success}
+    payment-failed: ${KAFKA_TOPICS_PAYMENT_FAILED:payment.failed}
+

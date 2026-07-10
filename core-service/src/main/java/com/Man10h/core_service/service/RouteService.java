@@ -11,6 +11,6 @@ public interface RouteService {
     public Page<RouteSummaryResponse> findRoutes(RouteFilter request);
     public RouteDetailResponse getRouteDetailById(Long id);
     public RouteDetailResponse createRoute(String userId, CreateRouteRequest request);
-    public RouteDetailResponse updateRoute(Long id, UpdateRouteRequest request);
-    public void deactivateRoute(Long id);
+    public RouteDetailResponse updateRoute(Long id, String userid, UpdateRouteRequest request);
+    public void deactivateRoute(String userId, Long id);
 }

@@ -8,6 +8,8 @@
     <artifactId>bus-booking-system</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <packaging>pom</packaging>
+
     <modules>
         <module>discovery-server</module>
         <module>config-server</module>

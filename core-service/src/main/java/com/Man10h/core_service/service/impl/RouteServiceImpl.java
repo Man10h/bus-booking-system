@@ -5,14 +5,14 @@ import com.Man10h.core_service.model.entities.Operator;
 import com.Man10h.core_service.model.entities.Route;
 import com.Man10h.core_service.model.entities.RouteStop;
 import com.Man10h.core_service.model.enums.RouteStatus;
+import com.Man10h.core_service.model.enums.ScheduleStatus;
 import com.Man10h.core_service.model.request.*;
 import com.Man10h.core_service.model.response.*;
-import com.Man10h.core_service.repository.CityRepository;
-import com.Man10h.core_service.repository.OperatorRepository;
-import com.Man10h.core_service.repository.RouteRepository;
-import com.Man10h.core_service.repository.RouteStopRepository;
+import com.Man10h.core_service.repository.*;
 import com.Man10h.core_service.service.RouteService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -31,6 +31,7 @@ public class RouteServiceImpl implements RouteService {
     private final OperatorRepository operatorRepository;
     private final CityRepository cityRepository;
     private final RouteStopRepository routeStopRepository;
+    private final ScheduleRepository scheduleRepository;
 
     public RouteSummaryResponse toRouteSummaryResponse(Route route) {
         Operator operator = route.getOperator();
@@ -65,13 +66,15 @@ public class RouteServiceImpl implements RouteService {
         for(RouteStop rs: route.getRouteStopList()){
             routeStopResponseList.add(toRouteStopResponse(rs));
         }
+        Operator operator = route.getOperator();
+        OperatorResponse operatorResponse = new OperatorResponse(operator.getId(), operator.getCompanyName(), operator.getContactPhone(), operator.getTaxCode(), operator.getAvatarUrl());
         return new RouteDetailResponse(
                 route.getId(),
                 route.getRouteCode(),
                 route.getDistance(),
                 route.getEstimatedDurationMinutes(),
                 route.getStatus(),
-                route.getOperator().getCompanyName(),
+                operatorResponse,
                 route.getArrivalCity().getName(),
                 route.getDepartureCity().getName(),
                 routeStopResponseList
@@ -79,6 +82,10 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Override
+    @Cacheable(
+            value = "routes",
+            key = "T(com.Man10h.core_service.utils.CacheKeyUtil).routeKey(#filter)"
+    )
     public Page<RouteSummaryResponse> findRoutes(RouteFilter request) {
         PageRequest pageRequest = PageRequest.of(request.page(), request.size());
 
@@ -103,6 +110,10 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Transactional
+    @CacheEvict(
+            value = "routes",
+            key = "T(com.Man10h.core_service.utils.CacheKeyUtil).routeKey(#filter)"
+    )
     public RouteDetailResponse createRoute(String userId, CreateRouteRequest request) {
         if(routeRepository.existsByRouteCode(request.routeCode())){
             throw new RouteCodeAlreadyExistsException("Route code already exists");
@@ -152,11 +163,18 @@ public class RouteServiceImpl implements RouteService {
         return toRouteDetailResponse(route);
     }
 
-    @Override
-    public RouteDetailResponse updateRoute(Long id, UpdateRouteRequest request) {
+    @Transactional
+    @CacheEvict(
+            value = "routes",
+            key = "T(com.Man10h.core_service.utils.CacheKeyUtil).routeKey(#filter)"
+    )
+    public RouteDetailResponse updateRoute(Long id, String userId, UpdateRouteRequest request) {
         Optional<Route> optional = routeRepository.getDetailById(id);
         if(optional.isEmpty()){
             throw new RouteNotFoundException("Route not found");
+        }
+        if(!optional.get().getOperator().getUserId().equals(userId)){
+            throw new AccessDeniedException("You don't own this route");
         }
         if(!cityRepository.existsById(request.arrivalCityId())){
             throw new CityNotFoundException("Arrival City not found");
@@ -194,13 +212,24 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Transactional
-    public void deactivateRoute(Long id) {
+    @CacheEvict(
+            value = "routes",
+            key = "T(com.Man10h.core_service.utils.CacheKeyUtil).routeKey(#filter)"
+    )
+    public void deactivateRoute(String userId, Long id) {
         Optional<Route> optional = routeRepository.getDetailById(id);
         if(optional.isEmpty()){
             throw new RouteNotFoundException("Route not found");
         }
+        if(!optional.get().getOperator().getUserId().equals(userId)){
+            throw new AccessDeniedException("You don't own this route");
+        }
+        if(scheduleRepository.existsByRoute_IdAndStatusIn(id, List.of(ScheduleStatus.OPEN, ScheduleStatus.RUNNING))){
+            throw new IllegalStateException("Schedule is already open or running");
+        }
         Route route = optional.get();
         route.setStatus(RouteStatus.INACTIVE);
+
         routeRepository.save(route);
     }
 }

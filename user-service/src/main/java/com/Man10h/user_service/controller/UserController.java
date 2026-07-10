@@ -46,14 +46,14 @@ public class UserController {
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'OPERATOR', 'ADMIN')")
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserResponse>> me(@AuthenticationPrincipal Jwt jwt) {
         UserResponse data = userService.getUserDetails(jwt.getSubject());
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'OPERATOR', 'ADMIN')")
     @PutMapping("/me")
     public ResponseEntity<ApiResponse<UserResponse>> updateUser(@RequestBody @Valid UserUpdateRequest request,
                                                                 @AuthenticationPrincipal Jwt jwt) {
@@ -61,7 +61,7 @@ public class UserController {
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'OPERATOR', 'ADMIN')")
     @PostMapping("/change-password")
     public ResponseEntity<ApiResponse<?>> changePassword(@RequestBody @Valid ChangePasswordRequest request,
                                                          @AuthenticationPrincipal Jwt jwt) {
@@ -72,7 +72,7 @@ public class UserController {
         return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SCOPE_user.read')")
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable String userId) {
         UserResponse data = userService.getUserDetails(userId);
@@ -80,7 +80,7 @@ public class UserController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping
+    @GetMapping(params = "!email")
     public ResponseEntity<ApiResponse<Page<UserResponse>>> findAllUsers(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size) {
@@ -95,9 +95,12 @@ public class UserController {
         return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{userId}/promote-operator")
     public ResponseEntity<ApiResponse<?>> promoteUserToOperator(@PathVariable String userId) {
         userService.promoteUserToOperator(userId);
         return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
     }
+
+
 }

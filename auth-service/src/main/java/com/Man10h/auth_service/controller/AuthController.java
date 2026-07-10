@@ -1,5 +1,6 @@
 package com.Man10h.auth_service.controller;
 
+import com.Man10h.auth_service.model.request.RefreshTokenRequest;
 import com.Man10h.auth_service.model.request.ServiceClientRequest;
 import com.Man10h.auth_service.model.request.ServiceTokenRequest;
 import com.Man10h.auth_service.model.request.UserLoginRequest;
@@ -42,6 +43,12 @@ public class AuthController {
     @PostMapping("/service-token")
     public ResponseEntity<ApiResponse<String>> serviceToken(@RequestBody @Valid ServiceTokenRequest request) {
         String data = tokenService.generateServiceToken(request);
+        return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<ApiResponse<LoginResponse>> refreshToken(@RequestBody RefreshTokenRequest request) {
+        LoginResponse data = authService.getTokenByRefreshToken(request.refreshToken());
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
     }
 

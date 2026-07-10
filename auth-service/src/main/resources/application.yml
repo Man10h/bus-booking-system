@@ -10,41 +10,37 @@ spring:
     oauth2:
       resource server:
         jwt:
-          jwk-set-uri: http://localhost:8000/auth/.well-known/jwks.json
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI:http://localhost:8000/auth/.well-known/jwks.json}
 
   datasource:
-    username: root
-    password: Manh2004
-    url: jdbc:mysql://localhost:3306/auth
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:Manh2004}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/auth}
 
   liquibase:
     change-log: classpath:/db/changelog/appchange-log.xml
-    liquibase-schema: auth
+    liquibase-schema: ${LIQUIBASE_SCHEMA:auth}
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
 
 eureka:
   client:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://localhost:8761/eureka
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL:http://localhost:8761/eureka}
 
 private_key:
-  path: D:\workspace\bus-booking-system\auth-service\private.pem
+  path: ${PRIVATE_KEY_PATH:D:\workspace\bus-booking-system\auth-service\private.pem}
 
 public_key:
-  path: D:\workspace\bus-booking-system\auth-service\public.pem
+  path: ${PUBLIC_KEY_PATH:D:\workspace\bus-booking-system\auth-service\public.pem}
 
 service:
-  auth:
-    client-id: payment-service
-    client-secret: your-secret
-
   users:
-    url: http://localhost:8001/users
+    url: ${SERVICE_USERS_URL:http://localhost:8001/users}
 
 server:
   port: 8000

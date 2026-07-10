@@ -41,15 +41,18 @@ public class RouteController {
 
     @PreAuthorize("hasRole('OPERATOR')")
     @PutMapping("/routes/{routeId}")
-    public ResponseEntity<ApiResponse<RouteDetailResponse>> updateRoute(@PathVariable Long routeId, @RequestBody UpdateRouteRequest request) {
-        RouteDetailResponse data = routeService.updateRoute(routeId, request);
+    public ResponseEntity<ApiResponse<RouteDetailResponse>> updateRoute(@PathVariable Long routeId,
+                                                                        @RequestBody UpdateRouteRequest request,
+                                                                        @AuthenticationPrincipal Jwt jwt) {
+        RouteDetailResponse data = routeService.updateRoute(routeId, jwt.getSubject(), request);
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
     }
 
     @PreAuthorize("hasRole('OPERATOR')")
     @PatchMapping("/routes/{routeId}/status")
-    public ResponseEntity<ApiResponse<?>> deactivateRoute(@PathVariable Long routeId) {
-        routeService.deactivateRoute(routeId);
+    public ResponseEntity<ApiResponse<?>> deactivateRoute(@PathVariable Long routeId,
+                                                          @AuthenticationPrincipal Jwt jwt) {
+        routeService.deactivateRoute(jwt.getSubject(), routeId);
         return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
     }
 }

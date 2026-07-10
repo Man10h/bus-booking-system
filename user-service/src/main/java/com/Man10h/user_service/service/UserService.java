@@ -14,6 +14,7 @@ public interface UserService {
     public boolean verifyUser(String email, String verificationCode);
     public UserResponse checkCredentials(UserLoginRequest request);
     public UserResponse getUserDetails(String id);
+    public UserResponse getUserByEmail(String email);
     public UserResponse updateUser(String userId, UserUpdateRequest request);
     public void changePassword(String userId, ChangePasswordRequest request);
     public Page<UserResponse> findAllUsers(Pageable pageable);

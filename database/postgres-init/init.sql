@@ -1,0 +1,2 @@
+CREATE DATABASE core;
+CREATE DATABASE payment;

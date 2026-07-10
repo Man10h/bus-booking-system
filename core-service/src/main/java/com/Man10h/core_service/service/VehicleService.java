@@ -14,7 +14,7 @@ public interface VehicleService {
     public VehicleResponse getVehicleDetail(Long id);
     public Page<VehicleResponse> getOperatorsVehicles(String userId, Pageable pageable);
     public void updateVehicle(Long id, String userId, UpdateVehicleRequest request);
-    public void updateStatus(Long id, String userId, String status);
+    public void updateVehicleStatus(Long id, String userId, String status);
     public List<SeatResponse> getVehicleSeats(Long id, String userId);
     public void updateSeatStatus(Long id, String userId, String status);
     public void updateSeatVipStatus(Long id, String userId);

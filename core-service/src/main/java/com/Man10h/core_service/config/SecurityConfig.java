@@ -61,6 +61,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(req -> req.
                         requestMatchers(HttpMethod.GET, "/core/routes**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/core/routes/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/core/schedules**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/core/schedules/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(
                         jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())

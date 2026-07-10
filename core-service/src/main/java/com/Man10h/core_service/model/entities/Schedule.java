@@ -27,6 +27,7 @@ public class Schedule {
     private BigDecimal vipPrice;
     private Long availableSeats;
     private Long totalSeats;
+    private String operatorId;
 
     @Enumerated(EnumType.STRING)
     private ScheduleStatus status;

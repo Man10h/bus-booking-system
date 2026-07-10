@@ -1,12 +1,10 @@
 package com.Man10h.auth_service.service.impl;
 
-import com.Man10h.auth_service.controller.exception.AuthenticationFailedException;
-import com.Man10h.auth_service.controller.exception.InvalidClientIdException;
-import com.Man10h.auth_service.controller.exception.InvalidTokenException;
-import com.Man10h.auth_service.controller.exception.ServiceClientNotFoundException;
+import com.Man10h.auth_service.controller.exception.*;
 import com.Man10h.auth_service.model.entities.RefreshToken;
 import com.Man10h.auth_service.model.entities.ServiceClient;
 import com.Man10h.auth_service.model.request.ServiceClientRequest;
+import com.Man10h.auth_service.model.request.ServiceTokenRequest;
 import com.Man10h.auth_service.model.request.UserLoginRequest;
 import com.Man10h.auth_service.model.response.ApiResponse;
 import com.Man10h.auth_service.model.response.LoginResponse;
@@ -16,6 +14,7 @@ import com.Man10h.auth_service.repository.RefreshTokenRepository;
 import com.Man10h.auth_service.repository.ServiceClientRepository;
 import com.Man10h.auth_service.service.AuthService;
 import com.Man10h.auth_service.service.TokenService;
+import com.Man10h.auth_service.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -48,6 +47,7 @@ public class AuthServiceImpl implements AuthService {
     private final RestTemplate restTemplate;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserService userService;
 
     public ServiceClientResponse toServiceClientResponse(ServiceClient serviceClient) {
         return new ServiceClientResponse(
@@ -97,8 +97,21 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse getTokenByRefreshToken(String refreshToken) {
-        //not done
-        return null;
+        RefreshToken refreshTokenEntity = refreshTokenRepository.findByTokenAndRevoked(refreshToken, false)
+                .orElseThrow(() -> new RefreshTokenNotFoundException("Refresh token not found"));
+
+
+        ServiceTokenRequest request = new ServiceTokenRequest("client_credentials", "auth", "auth", "user.read");
+        String token = tokenService.generateAuthServiceToken(request);
+
+        ResponseEntity<ApiResponse<UserResponse>> response = userService.getUser(refreshTokenEntity.getUserId(),
+                "Bearer " + token);
+
+        if(!response.getStatusCode().is2xxSuccessful()){
+            throw new AuthenticationFailedException("Service token invalid");
+        }
+        UserResponse userResponse =  Objects.requireNonNull(response.getBody()).data();
+        return new LoginResponse(tokenService.generateUserToken(userResponse), refreshToken, "user", 10800000L, 86400000L);
     }
 
     @Transactional
@@ -106,12 +119,12 @@ public class AuthServiceImpl implements AuthService {
 
         Optional<ServiceClient> optional = serviceClientRepository.findByClientId(request.clientId());
         if(optional.isPresent()){
-            throw new InvalidClientIdException("Client id already exists");
+            throw new ClientIdAlreadyExistsException("Client id already exists");
         }
         ServiceClient serviceClient = ServiceClient.builder()
                 .clientId(request.clientId())
                 .clientSecret(passwordEncoder.encode(request.clientSecret()))
-                .scopes("operator.read")
+                .scopes(request.scope())
                 .active(true)
                 .build();
         serviceClientRepository.save(serviceClient);

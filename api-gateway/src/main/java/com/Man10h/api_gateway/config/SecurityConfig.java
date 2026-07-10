@@ -65,6 +65,9 @@ public class SecurityConfig {
                         .pathMatchers("/users/check-credentials").permitAll()
                         .pathMatchers(HttpMethod.GET, "/core/routes**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/core/routes/**").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/core/schedules**").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/core/schedules/**").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/payments/vnpay/ipn**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->

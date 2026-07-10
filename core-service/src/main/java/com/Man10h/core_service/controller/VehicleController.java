@@ -67,7 +67,7 @@ public class VehicleController {
     public ResponseEntity<ApiResponse<?>> updateVehicleStatus(@RequestBody @NotBlank String status,
                                                               @AuthenticationPrincipal Jwt jwt,
                                                               @PathVariable Long vehicleId) {
-        vehicleService.updateStatus(vehicleId, jwt.getSubject(), status);
+        vehicleService.updateVehicleStatus(vehicleId, jwt.getSubject(), status);
         return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
     }
 

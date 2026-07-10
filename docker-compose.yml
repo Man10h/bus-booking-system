@@ -1,0 +1,258 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  db-mysql:
+    image: mysql:8.0
+    container_name: db-mysql
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: Manh2004
+      MYSQL_DATABASE: auth
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database/mysql-init/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - bus-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pManh2004"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL Database
+  db-postgres:
+    image: postgres:16-alpine
+    container_name: db-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Manh2004
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/postgres-init/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - bus-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - bus-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Zookeeper for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - bus-network
+
+  # Kafka Message Broker
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - bus-network
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # Eureka Discovery Server
+  discovery-server:
+    build:
+      context: ./discovery-server
+      dockerfile: Dockerfile
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    networks:
+      - bus-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Config Server
+  config-server:
+    build:
+      context: ./config-server
+      dockerfile: Dockerfile
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    environment:
+      EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
+    networks:
+      - bus-network
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8000:8000"
+    depends_on:
+      db-mysql:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-mysql:3306/auth
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Manh2004
+      EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
+      PRIVATE_KEY_PATH: /app/private.pem
+      PUBLIC_KEY_PATH: /app/public.pem
+      SERVICE_USERS_URL: http://user-service:8001/users
+    networks:
+      - bus-network
+
+  # User Service
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "8001:8001"
+    depends_on:
+      db-mysql:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-mysql:3306/users
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Manh2004
+      EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
+      SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
+    networks:
+      - bus-network
+
+  # Core Service
+  core-service:
+    build:
+      context: ./core-service
+      dockerfile: Dockerfile
+    container_name: core-service
+    ports:
+      - "8002:8002"
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-postgres:5432/core
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: Manh2004
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
+      SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
+    networks:
+      - bus-network
+
+  # Payment Service
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    container_name: payment-service
+    ports:
+      - "8003:8003"
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      core-service:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-postgres:5432/payment
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: Manh2004
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
+      SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
+      SERVICES_CORE_URL: http://core-service:8002/core
+      SERVICES_AUTH_URL: http://auth-service:8000/auth
+    networks:
+      - bus-network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    environment:
+      EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
+      SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
+    networks:
+      - bus-network
+
+networks:
+  bus-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  postgres-data:
