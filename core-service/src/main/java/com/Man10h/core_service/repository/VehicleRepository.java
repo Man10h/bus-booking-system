@@ -1,6 +1,7 @@
 package com.Man10h.core_service.repository;
 
 import com.Man10h.core_service.model.entities.Vehicle;
+import com.Man10h.core_service.model.enums.VehicleStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -40,4 +41,9 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     Optional<Vehicle> getDetailWithSeatsById(@Param("id") Long id);
 
 
+    @Query("""
+    SELECT COUNT(v) FROM Vehicle v WHERE v.operator.id = :operatorId AND v.status = :status
+""")
+    Long getVehicleCountByStatus(@Param("status") VehicleStatus status,
+                                 @Param("operatorId") String operatorId);
 }

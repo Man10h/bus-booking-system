@@ -1,18 +1,17 @@
 package com.Man10h.core_service.service.impl;
 
 import com.Man10h.core_service.controller.exception.BookingNotFoundException;
+import com.Man10h.core_service.controller.exception.OperatorNotFoundException;
 import com.Man10h.core_service.controller.exception.ScheduleNotFoundException;
 import com.Man10h.core_service.model.entities.Booking;
+import com.Man10h.core_service.model.entities.Operator;
 import com.Man10h.core_service.model.entities.Schedule;
 import com.Man10h.core_service.model.entities.ScheduleSeat;
-import com.Man10h.core_service.model.enums.BookingStatus;
-import com.Man10h.core_service.model.enums.ScheduleSeatStatus;
-import com.Man10h.core_service.model.enums.ScheduleStatus;
+import com.Man10h.core_service.model.enums.*;
 import com.Man10h.core_service.model.request.CreateBookingRequest;
+import com.Man10h.core_service.model.request.StatisticFilter;
 import com.Man10h.core_service.model.response.*;
-import com.Man10h.core_service.repository.BookingRepository;
-import com.Man10h.core_service.repository.ScheduleRepository;
-import com.Man10h.core_service.repository.ScheduleSeatRepository;
+import com.Man10h.core_service.repository.*;
 import com.Man10h.core_service.service.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +34,9 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final ScheduleSeatRepository scheduleSeatRepository;
     private final ScheduleRepository scheduleRepository;
+    private final OperatorRepository operatorRepository;
+    private final RouteRepository routeRepository;
+    private final VehicleRepository vehicleRepository;
 
     public BookingSummaryResponse toBookingSummaryResponse(Booking booking){
         return new BookingSummaryResponse(
@@ -156,6 +159,91 @@ public class BookingServiceImpl implements BookingService {
         return bookingRepository.findById(bookingId).map(this::toBookingSummaryResponse)
                 .orElseThrow(() -> new BookingNotFoundException("Booking not found"));
     }
+
+    @Transactional
+    public void cancelBooking(String userId, Long bookingId) {
+        Booking booking = bookingRepository.getBookingDetailByIdAndUserId(bookingId, userId)
+                .orElseThrow(() -> new BookingNotFoundException("Booking not found"));
+
+        if(booking.getStatus() != BookingStatus.PENDING_PAYMENT){
+            throw new IllegalStateException("Booking is not PENDING_PAYMENT");
+        }
+        booking.setStatus(BookingStatus.CANCELLED);
+        booking.getScheduleSeatList().forEach(seat -> {
+            seat.setStatus(ScheduleSeatStatus.AVAILABLE);
+            seat.setHeldBy(null);
+            seat.setHeldAt(null);
+            seat.setExpiredAt(null);
+            seat.setBooking(null);
+        });
+        booking.getScheduleSeatList().clear();
+//        bookingRepository.save(booking);
+    }
+
+    @Override
+    public StatisticalOverviewResponse getStatisticalOverview(String userId) {
+        Operator operator = operatorRepository.findByUserId(userId)
+                        .orElseThrow(() -> new OperatorNotFoundException("Operator not found"));
+        LocalDate today = LocalDate.now();
+
+        LocalDateTime startDay = today.atStartOfDay();
+        LocalDateTime endDay = startDay.plusDays(1);
+        LocalDateTime startMonth = today.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endMonth = startMonth.plusMonths(1L);
+
+        Long totalBooking = bookingRepository.getTotalOperatorsBooking(operator.getId());
+        Long completedBookings = bookingRepository.getTotalOperatorsStatusBooking(operator.getId(), BookingStatus.COMPLETED);
+        Long cancelledBookings = bookingRepository.getTotalOperatorsStatusBooking(operator.getId(), BookingStatus.CANCELLED);
+        Long pendingBookings = bookingRepository.getTotalOperatorsStatusBooking(operator.getId(), BookingStatus.PENDING_PAYMENT);
+
+        BigDecimal totalRevenue = bookingRepository.getTotalRevenue(operator.getId(), BookingStatus.COMPLETED);
+        BigDecimal todayRevenue = bookingRepository.getRevenueIn(operator.getId(), BookingStatus.COMPLETED, startDay, endDay);
+        BigDecimal monthRevenue = bookingRepository.getRevenueIn(operator.getId(), BookingStatus.COMPLETED, startMonth, endMonth);
+
+
+        Long activeRoute = routeRepository.getRouteCountByStatus(RouteStatus.ACTIVE, operator.getId());
+        Long activeVehicle = vehicleRepository.getVehicleCountByStatus(VehicleStatus.ACTIVE, operator.getId());
+        Long openSchedule = scheduleRepository.getScheduleCountByStatus(ScheduleStatus.OPEN, operator.getId());
+        Long runningSchedule = scheduleRepository.getScheduleCountByStatus(ScheduleStatus.RUNNING, operator.getId());
+        return new StatisticalOverviewResponse(
+                totalBooking,
+                completedBookings,
+                cancelledBookings,
+                pendingBookings,
+                totalRevenue,
+                monthRevenue,
+                todayRevenue,
+                activeRoute,
+                activeVehicle,
+                openSchedule,
+                runningSchedule
+        );
+    }
+
+    @Override
+    public List<TimeStatisticResponse> getTimeStatistic(String userId, StatisticFilter statisticFilter) {
+        Operator operator = operatorRepository.findByUserId(userId)
+                .orElseThrow(() -> new OperatorNotFoundException("Operator not found"));
+        return statisticFilter.statisticType() == StatisticType.DAY ?
+                bookingRepository.statisticByDayFromStartToEnd(operator.getId(), BookingStatus.COMPLETED, statisticFilter.from().atStartOfDay(), statisticFilter.to().atStartOfDay().plusDays(1)):
+                bookingRepository.statisticByMonthFromStartToEnd(operator.getId(), BookingStatus.COMPLETED, statisticFilter.from().withDayOfMonth(1).atStartOfDay(), statisticFilter.to().withDayOfMonth(1).atStartOfDay().plusMonths(1L))
+                ;
+    }
+
+    @Override
+    public List<TopRouteResponse> getTopRoutes(String userId) {
+        Operator operator = operatorRepository.findByUserId(userId)
+                .orElseThrow(() -> new OperatorNotFoundException("Operator not found"));
+        return bookingRepository.topRoutes(operator.getId(), BookingStatus.COMPLETED);
+    }
+
+    @Override
+    public List<TopVehicleResponse> getTopVehicles(String userId) {
+        Operator operator = operatorRepository.findByUserId(userId)
+                .orElseThrow(() -> new OperatorNotFoundException("Operator not found"));
+        return bookingRepository.topVehicles(operator.getId(), BookingStatus.COMPLETED);
+    }
+
 
     @Transactional
     public void updateBookingPaidStatus(Long bookingId) {

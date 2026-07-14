@@ -81,4 +81,9 @@ AND s.arrivalTime <= :now
     boolean existsByVehicle_IdAndStatusIn(Long vehicleId, List<ScheduleStatus> scheduleStatuses);
 
 
+    @Query("""
+    SELECT COUNT(s) FROM Schedule s WHERE s.operatorId = :operatorId AND s.status = :status
+""")
+    Long getScheduleCountByStatus(@Param("status") ScheduleStatus status,
+                                  @Param("operatorId") String operatorId);
 }

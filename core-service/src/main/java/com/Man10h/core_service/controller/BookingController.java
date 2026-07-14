@@ -58,4 +58,11 @@ public class BookingController {
 
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
     }
+
+    @PreAuthorize("hasRole('USER')")
+    @PatchMapping("/bookings/{bookingId}/cancel")
+    public ResponseEntity<ApiResponse<?>> cancelBooking(@AuthenticationPrincipal Jwt jwt, @PathVariable Long bookingId) {
+        bookingService.cancelBooking(jwt.getSubject(), bookingId);
+        return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
+    }
 }

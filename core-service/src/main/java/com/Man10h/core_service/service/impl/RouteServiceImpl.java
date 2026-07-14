@@ -110,10 +110,6 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Transactional
-    @CacheEvict(
-            value = "routes",
-            key = "T(com.Man10h.core_service.utils.CacheKeyUtil).routeKey(#filter)"
-    )
     public RouteDetailResponse createRoute(String userId, CreateRouteRequest request) {
         if(routeRepository.existsByRouteCode(request.routeCode())){
             throw new RouteCodeAlreadyExistsException("Route code already exists");
@@ -164,10 +160,6 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Transactional
-    @CacheEvict(
-            value = "routes",
-            key = "T(com.Man10h.core_service.utils.CacheKeyUtil).routeKey(#filter)"
-    )
     public RouteDetailResponse updateRoute(Long id, String userId, UpdateRouteRequest request) {
         Optional<Route> optional = routeRepository.getDetailById(id);
         if(optional.isEmpty()){
@@ -212,10 +204,6 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Transactional
-    @CacheEvict(
-            value = "routes",
-            key = "T(com.Man10h.core_service.utils.CacheKeyUtil).routeKey(#filter)"
-    )
     public void deactivateRoute(String userId, Long id) {
         Optional<Route> optional = routeRepository.getDetailById(id);
         if(optional.isEmpty()){

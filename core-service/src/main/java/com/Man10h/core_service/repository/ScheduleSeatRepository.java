@@ -40,7 +40,7 @@ public interface ScheduleSeatRepository extends JpaRepository<ScheduleSeat, Long
     @Query(value = """
 UPDATE schedule_seat ss
 SET status = 'AVAILABLE',
-    booking_id = NULL
+    booking_id = NULL, held_by = NULL, held_at = NULL, expired_at = NULL
 FROM booking b
 WHERE ss.booking_id = b.id
   AND b.status = 'PENDING_PAYMENT'
