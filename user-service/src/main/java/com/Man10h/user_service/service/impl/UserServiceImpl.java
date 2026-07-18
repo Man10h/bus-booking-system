@@ -9,12 +9,17 @@ import com.Man10h.user_service.model.request.UserLoginRequest;
 import com.Man10h.user_service.model.request.UserRegisterRequest;
 import com.Man10h.user_service.model.request.UserUpdateRequest;
 import com.Man10h.user_service.model.response.UserResponse;
+import com.Man10h.user_service.model.response.UserVerificationResponse;
 import com.Man10h.user_service.repository.RoleRepository;
 import com.Man10h.user_service.repository.UserRepository;
 import com.Man10h.user_service.service.UserService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -29,10 +34,16 @@ import java.util.Random;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
+    @Value("${kafka.topics.user-register-success}")
+    private String topicUserRegisterSuccess;
+
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final ObjectMapper om;
+
 
     public String generateVerificationCode() {
         return new Random().nextLong(10000L) + "";
@@ -70,6 +81,7 @@ public class UserServiceImpl implements UserService {
                 () -> new RoleNotFoundException("Role not found")
         );
 
+        String verificationCode = generateVerificationCode();
         User user = User.builder()
                 .email(request.email())
                 .password(request.password())
@@ -78,7 +90,7 @@ public class UserServiceImpl implements UserService {
                 .password(passwordEncoder.encode(request.password()))
                 .enabled(true)
                 .phone(request.phone())
-                .verificationCode(generateVerificationCode())
+                .verificationCode(verificationCode)
                 .verificationExpiryDate(LocalDateTime.now().plusMinutes(10))
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -86,6 +98,24 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
 
         //send email verification code
+        UserVerificationResponse userVerificationResponse = new UserVerificationResponse(
+                user.getEmail(),
+                user.getEnabled(),
+                user.getCreatedAt(),
+                user.getVerificationCode(),
+                user.getVerificationExpiryDate()
+        );
+        try {
+            kafkaTemplate.send(topicUserRegisterSuccess, user.getId(), om.writeValueAsString(userVerificationResponse))
+                    .whenComplete((res, ex) -> {
+                        if(ex == null){
+                            throw new GlobalException("Can not send the message");
+                        }
+                    });
+        } catch (JsonProcessingException e) {
+            throw new GlobalException(e.getMessage());
+        }
+
     }
 
     @Transactional

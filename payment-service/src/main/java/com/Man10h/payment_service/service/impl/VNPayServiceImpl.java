@@ -56,6 +56,7 @@ public class VNPayServiceImpl implements PaymentMethod {
     public PaymentResponse toPaymentResponse(Payment payment) {
         return new PaymentResponse(
                 payment.getId(),
+                payment.getUserId(),
                 payment.getAmount(),
                 payment.getStatus(),
                 payment.getProvider(),

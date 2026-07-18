@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 
 public record PaymentResponse(
         String id,
+        String userId,
         BigDecimal amount,
         PaymentStatus status,
         Provider provider,

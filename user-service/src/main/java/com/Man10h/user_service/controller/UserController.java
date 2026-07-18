@@ -72,7 +72,7 @@ public class UserController {
         return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
     }
 
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'SCOPE_user.read')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'SCOPE_user.read')")
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable String userId) {
         UserResponse data = userService.getUserDetails(userId);

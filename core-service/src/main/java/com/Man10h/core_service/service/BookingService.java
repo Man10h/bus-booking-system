@@ -18,6 +18,7 @@ public interface BookingService {
 
     public void updateBookingPaidStatus(Long bookingId);
     public void updateBookingCancellation();
+    public void notifyUpcomingBooking();
 
     public StatisticalOverviewResponse getStatisticalOverview(String userId);
     public List<TimeStatisticResponse> getTimeStatistic(String userId, StatisticFilter statisticFilter);

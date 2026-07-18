@@ -25,6 +25,18 @@ spring:
         jwt:
           jwk-set-uri:  ${SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI:http://localhost:8000/auth/.well-known/jwks.json}
 
+  kafka:
+    bootstrap-servers: localhost:9092
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 1
+
 eureka:
   client:
     service-url:
@@ -34,3 +46,7 @@ eureka:
 
 server:
   port: 8001
+
+kafka:
+  topics:
+    user-register-success: ${KAFKA_TOPICS_USER_REGISTER_SUCCESS:user.register.success}

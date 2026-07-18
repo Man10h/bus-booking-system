@@ -1,2 +1,3 @@
 CREATE DATABASE core;
 CREATE DATABASE payment;
+CREATE DATABASE notifications;

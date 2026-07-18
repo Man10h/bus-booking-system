@@ -21,6 +21,11 @@ spring:
     change-log: classpath:/db/changelog/appchange-log.xml
     liquibase-schema: ${LIQUIBASE_SCHEMA:auth}
 
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
   jpa:
     hibernate:
       ddl-auto: none

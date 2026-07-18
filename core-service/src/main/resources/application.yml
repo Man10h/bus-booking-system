@@ -39,6 +39,15 @@ spring:
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       enable-auto-commit: false
 
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 1
+
 eureka:
   client:
     register-with-eureka: true
@@ -52,3 +61,4 @@ server:
 kafka:
   topics:
     payment-success: ${KAFKA_TOPICS_PAYMENT_SUCCESS:payment.success}
+    booking-ready: ${KAFKA_TOPICS_BOOKING_READY:booking.ready}

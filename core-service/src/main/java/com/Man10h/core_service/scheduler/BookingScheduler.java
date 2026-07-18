@@ -12,8 +12,14 @@ import org.springframework.stereotype.Component;
 public class BookingScheduler {
     private final BookingService bookingService;
 
+
     @Scheduled(cron = "0 * * * * *")
     public void updateBookingCancelSchedule() {
         bookingService.updateBookingCancellation();
+    }
+
+    @Scheduled(cron = "0 * * * * *")
+    public void notifyUpcomingBooking() {
+        bookingService.notifyUpcomingBooking();
     }
 }

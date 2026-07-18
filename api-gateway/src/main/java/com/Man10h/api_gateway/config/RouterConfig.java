@@ -31,6 +31,11 @@ public class RouterConfig {
                                 .path("/payments/**")
                                 .uri("lb://payment-service:8003")
                 )
+                .route("notification-service",
+                        r -> r
+                                .path("/notifications/**")
+                                .uri("lb://notification-service:8004")
+                )
                 .build();
     }
 }

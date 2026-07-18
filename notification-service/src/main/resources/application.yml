@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: notification-service
+
+  security:
+    oauth2:
+      resource server:
+        jwt:
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI:http://localhost:8000/auth/.well-known/jwks.json}
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/notifications}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:Manh2004}
+    driver-class-name: org.postgresql.Driver
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SPRING_MAIL_USERNAME:nguyenmanhlc10@gmail.com}
+    password: ${SPRING_MAIL_PASSWORD:aaof rvju disf hati}
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_batch_fetch_size: 10
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+    consumer:
+      group-id: notification-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      enable-auto-commit: false
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL:http://localhost:8761/eureka}
+
+server:
+  port: 8004
+
+kafka:
+  topics:
+    payment-success: ${KAFKA_TOPICS_PAYMENT_SUCCESS:payment.success}
+    user-register-success: ${KAFKA_TOPICS_USER_REGISTER_SUCCESS:user.register.success}
+    booking-ready: ${KAFKA_TOPICS_BOOKING_READY:booking.ready}

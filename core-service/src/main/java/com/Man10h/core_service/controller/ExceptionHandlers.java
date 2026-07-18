@@ -167,4 +167,16 @@ public class ExceptionHandlers {
                 )
         );
     }
+
+    @ExceptionHandler(GlobalException.class)
+    public ResponseEntity<ErrorResponse> globalException(GlobalException ex){
+        return ResponseEntity.ok(
+                new ErrorResponse(
+                        HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                )
+        );
+    }
 }

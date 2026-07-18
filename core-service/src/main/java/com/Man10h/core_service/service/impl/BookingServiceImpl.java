@@ -1,6 +1,7 @@
 package com.Man10h.core_service.service.impl;
 
 import com.Man10h.core_service.controller.exception.BookingNotFoundException;
+import com.Man10h.core_service.controller.exception.GlobalException;
 import com.Man10h.core_service.controller.exception.OperatorNotFoundException;
 import com.Man10h.core_service.controller.exception.ScheduleNotFoundException;
 import com.Man10h.core_service.model.entities.Booking;
@@ -13,9 +14,14 @@ import com.Man10h.core_service.model.request.StatisticFilter;
 import com.Man10h.core_service.model.response.*;
 import com.Man10h.core_service.repository.*;
 import com.Man10h.core_service.service.BookingService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +35,11 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BookingServiceImpl implements BookingService {
+
+    @Value("${kafka.topics.booking-ready}")
+    private String bookingReadyTopic;
 
     private final BookingRepository bookingRepository;
     private final ScheduleSeatRepository scheduleSeatRepository;
@@ -37,6 +47,8 @@ public class BookingServiceImpl implements BookingService {
     private final OperatorRepository operatorRepository;
     private final RouteRepository routeRepository;
     private final VehicleRepository vehicleRepository;
+    private final ObjectMapper objectMapper;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
     public BookingSummaryResponse toBookingSummaryResponse(Booking booking){
         return new BookingSummaryResponse(
@@ -127,6 +139,7 @@ public class BookingServiceImpl implements BookingService {
                 .paymentDeadline(now.plusMinutes(30))
                 .scheduleSeatList(new ArrayList<>())
                 .totalAmount(totalPrice)
+                .notified(false)
                 .build();
         for(ScheduleSeat scheduleSeat : scheduleSeatList) {
             scheduleSeat.setStatus(ScheduleSeatStatus.HELD);
@@ -261,5 +274,29 @@ public class BookingServiceImpl implements BookingService {
         scheduleSeatRepository.releaseExpiredSeats(now);
 
         bookingRepository.updateBookingStatus(now);
+    }
+
+    @Transactional
+    public void notifyUpcomingBooking() {
+        LocalDateTime from = LocalDateTime.now().plusMinutes(15);
+        LocalDateTime to = from.plusMinutes(5);
+        List<Long> bookingIds = new ArrayList<>();
+        bookingRepository.getRemindersResponse(from, to, BookingStatus.PAID)
+                 .forEach(reminder -> {
+                     try {
+                         kafkaTemplate.send(bookingReadyTopic, objectMapper.writeValueAsString(reminder))
+                                 .whenComplete((r, e) -> {
+                                     if (e != null) {
+                                         log.error("Failed to send reminder: {}", reminder.bookingCode(), e);
+                                     } else {
+                                         log.info("Reminder sent: {}", reminder.bookingCode());
+                                     }
+                                 });
+                     } catch (JsonProcessingException e) {
+                         throw new GlobalException(e.getMessage());
+                     }
+                     bookingIds.add(reminder.bookingId());
+                 });
+        bookingRepository.markReminderSent(bookingIds);
     }
 }

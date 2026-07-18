@@ -2,6 +2,7 @@ package com.Man10h.core_service.repository;
 
 import com.Man10h.core_service.model.entities.Booking;
 import com.Man10h.core_service.model.enums.BookingStatus;
+import com.Man10h.core_service.model.response.DepartureReminderResponse;
 import com.Man10h.core_service.model.response.TimeStatisticResponse;
 import com.Man10h.core_service.model.response.TopRouteResponse;
 import com.Man10h.core_service.model.response.TopVehicleResponse;
@@ -155,4 +156,24 @@ ORDER BY MONTH(b.createAt)
 """)
     List<TopRouteResponse> topRoutes(@Param("operatorId") String operatorId,
                                      @Param("status") BookingStatus status);
+
+
+    @Query("""
+    SELECT new com.Man10h.core_service.model.response.DepartureReminderResponse(b.id, b.userId, b.bookingCode) FROM Booking b
+    JOIN b.schedule s
+    WHERE  s.departureTime >= :from 
+    AND s.departureTime < :to
+    AND b.status = :status 
+    AND b.notified = false
+""")
+    List<DepartureReminderResponse> getRemindersResponse(@Param("from") LocalDateTime from,
+                                                         @Param("to") LocalDateTime to,
+                                                         @Param("status") BookingStatus status);
+    @Modifying
+    @Query("""
+    UPDATE Booking b 
+    SET b.notified = true
+    WHERE b.id IN :ids
+""")
+    int markReminderSent(@Param("ids") List<Long> ids);
 }

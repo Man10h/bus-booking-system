@@ -141,6 +141,8 @@ services:
       PRIVATE_KEY_PATH: /app/private.pem
       PUBLIC_KEY_PATH: /app/public.pem
       SERVICE_USERS_URL: http://user-service:8001/users
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
     networks:
       - bus-network
 
@@ -227,6 +229,33 @@ services:
       SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
       SERVICES_CORE_URL: http://core-service:8002/core
       SERVICES_AUTH_URL: http://auth-service:8000/auth
+    networks:
+      - bus-network
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "8004:8004"
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-postgres:5432/notifications
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: Manh2004
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
+      SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
     networks:
       - bus-network
 
