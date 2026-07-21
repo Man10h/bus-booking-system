@@ -30,6 +30,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -198,6 +199,7 @@ public class VNPayServiceImpl implements PaymentMethod {
             try {
                 OutboxEvent event = OutboxEvent.builder()
                         .source("payment")
+                        .id(UUID.randomUUID().toString())
                         .createdAt(LocalDateTime.now())
                         .eventType(paymentSuccessTopic)
                         .payload(objectMapper.writeValueAsString(paymentResponse))
@@ -218,6 +220,7 @@ public class VNPayServiceImpl implements PaymentMethod {
             //push message
             try {
                 OutboxEvent event = OutboxEvent.builder()
+                        .id(UUID.randomUUID().toString())
                         .source("payment")
                         .createdAt(LocalDateTime.now())
                         .eventType(paymentFailedTopic)

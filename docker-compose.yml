@@ -105,20 +105,20 @@ services:
       retries: 5
 
   # Config Server
-  config-server:
-    build:
-      context: ./config-server
-      dockerfile: Dockerfile
-    container_name: config-server
-    ports:
-      - "8888:8888"
-    depends_on:
-      discovery-server:
-        condition: service_healthy
-    environment:
-      EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
-    networks:
-      - bus-network
+#  config-server:
+#    build:
+#      context: ./config-server
+#      dockerfile: Dockerfile
+#    container_name: config-server
+#    ports:
+#      - "8888:8888"
+#    depends_on:
+#      discovery-server:
+#        condition: service_healthy
+#    environment:
+#      EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
+#    networks:
+#      - bus-network
 
   # Auth Service
   auth-service:
@@ -167,6 +167,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: Manh2004
       EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
       SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
+      SPRING_KAFKA_SERVER: kafka:9092
     networks:
       - bus-network
 
@@ -198,6 +199,8 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
       SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
+      SPRING_KAFKA_SERVER: kafka:9092
+      TZ: Asia/Ho_Chi_Minh
     networks:
       - bus-network
 
@@ -229,6 +232,8 @@ services:
       SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
       SERVICES_CORE_URL: http://core-service:8002/core
       SERVICES_AUTH_URL: http://auth-service:8000/auth
+      SPRING_KAFKA_SERVER: kafka:9092
+      TZ: Asia/Ho_Chi_Minh
     networks:
       - bus-network
 
@@ -256,6 +261,8 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
       SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
+      SPRING_KAFKA_SERVER: kafka:9092
+      TZ: Asia/Ho_Chi_Minh
     networks:
       - bus-network
 
@@ -275,6 +282,22 @@ services:
     environment:
       EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
       SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
+    networks:
+      - bus-network
+
+  # Ngrok Tunnel to expose API Gateway
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok
+    command:
+      - "http"
+      - "api-gateway:8080"
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    ports:
+      - "4040:4040"
+    depends_on:
+      - api-gateway
     networks:
       - bus-network
 

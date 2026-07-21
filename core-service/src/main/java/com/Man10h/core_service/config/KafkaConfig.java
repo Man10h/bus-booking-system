@@ -1,6 +1,8 @@
 package com.Man10h.core_service.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.internals.Topic;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,8 +35,5 @@ public class KafkaConfig {
         return factory;
     }
 
-    @Bean
-    public ObjectMapper objectMapper(){
-        return new ObjectMapper();
-    }
+
 }

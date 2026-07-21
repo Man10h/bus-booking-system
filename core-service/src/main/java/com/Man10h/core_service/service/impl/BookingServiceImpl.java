@@ -57,8 +57,8 @@ public class BookingServiceImpl implements BookingService {
                 booking.getOperatorId(),
                 booking.getBookingCode(),
                 booking.getTotalAmount(),
-                booking.getCreateAt(),
                 booking.getPaymentDeadline(),
+                booking.getCreateAt(),
                 booking.getStatus()
         );
     }
@@ -97,8 +97,8 @@ public class BookingServiceImpl implements BookingService {
                 booking.getOperatorId(),
                 booking.getBookingCode(),
                 booking.getTotalAmount(),
-                booking.getCreateAt(),
                 booking.getPaymentDeadline(),
+                booking.getCreateAt(),
                 booking.getStatus(),
                 scheduleSummaryResponse,
                 scheduleSeatResponseList
@@ -144,6 +144,10 @@ public class BookingServiceImpl implements BookingService {
         for(ScheduleSeat scheduleSeat : scheduleSeatList) {
             scheduleSeat.setStatus(ScheduleSeatStatus.HELD);
             scheduleSeat.setBooking(booking);
+            scheduleSeat.setHeldBy(userId);
+            scheduleSeat.setHeldAt(now);
+            scheduleSeat.setExpiredAt(now.plusMinutes(30));
+            scheduleSeatRepository.save(scheduleSeat);
         }
         booking.setScheduleSeatList(scheduleSeatList);
 
@@ -188,9 +192,10 @@ public class BookingServiceImpl implements BookingService {
             seat.setHeldAt(null);
             seat.setExpiredAt(null);
             seat.setBooking(null);
+            scheduleSeatRepository.save(seat);
         });
         booking.getScheduleSeatList().clear();
-//        bookingRepository.save(booking);
+        bookingRepository.save(booking);
     }
 
     @Override

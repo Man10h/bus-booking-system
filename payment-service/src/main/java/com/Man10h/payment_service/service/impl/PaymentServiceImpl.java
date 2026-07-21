@@ -27,6 +27,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -68,7 +69,7 @@ public class PaymentServiceImpl implements PaymentService {
         );
     }
 
-    @Override
+    @Transactional
     public String createPayment(String userId, CreatePaymentRequest createPaymentRequest) {
         ServiceTokenRequest serviceTokenRequest = new ServiceTokenRequest("client_credentials",clientId, clientSecret, scope);
         ResponseEntity<ApiResponse<String>> tokenResponse = authService.serviceToken(serviceTokenRequest);
@@ -100,6 +101,7 @@ public class PaymentServiceImpl implements PaymentService {
                     throw new MerchantInActiveException("Merchant inactive");
                 }
                 Payment payment = Payment.builder()
+                        .userId(data.userId())
                         .merchant(optionalMerchant.get())
                         .bookingId(createPaymentRequest.bookingId())
                         .provider(Provider.valueOf(createPaymentRequest.provider()))

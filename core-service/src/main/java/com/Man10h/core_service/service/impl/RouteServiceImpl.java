@@ -15,6 +15,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -81,22 +82,30 @@ public class RouteServiceImpl implements RouteService {
         );
     }
 
+
+    //cache: redis not support record => that's why the value in redis miss main @class. But the record object in class still can deserialize because it declares the field
     @Override
     @Cacheable(
             value = "routes",
-            key = "T(com.Man10h.core_service.utils.CacheKeyUtil).routeKey(#filter)"
+            key = "T(com.Man10h.core_service.util.CacheKeyUtil).routeKey(#request)"
     )
-    public Page<RouteSummaryResponse> findRoutes(RouteFilter request) {
-        PageRequest pageRequest = PageRequest.of(request.page(), request.size());
-
+    public RoutePageResponse findRoutes(RouteFilter request, Pageable pageable) {
         Specification<Route> spec = Specification.anyOf(
                 departureCity(request.departureCityId()),
                 arrivalCity(request.arrivalCityId()),
                 operator(request.operatorId()),
-                status(request.status().isEmpty() ? RouteStatus.ACTIVE : RouteStatus.valueOf(request.status()))
+                status(request.status())
         );
-        return routeRepository.findAll(spec, pageRequest)
+        Page<RouteSummaryResponse> page = routeRepository.findAll(spec, pageable)
                 .map(this::toRouteSummaryResponse);
+
+        return new RoutePageResponse(
+                page.getContent(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.getNumber(),
+                page.getSize()
+        );
     }
 
     @Override

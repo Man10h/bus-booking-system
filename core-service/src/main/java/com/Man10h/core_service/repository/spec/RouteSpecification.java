@@ -41,12 +41,12 @@ public class RouteSpecification {
         };
     }
 
-    public static Specification<Route> status(RouteStatus status) {
+    public static Specification<Route> status(String status) {
         return (root, query, cb) -> {
             if (status == null) {
                 return null;
             }
-            return cb.equal(root.get("status"), status);
+            return cb.equal(root.get("status"), RouteStatus.valueOf(status));
         };
     }
 }

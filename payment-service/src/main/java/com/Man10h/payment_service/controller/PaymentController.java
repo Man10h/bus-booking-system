@@ -76,8 +76,8 @@ public class PaymentController {
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<Page<PaymentResponse>>> getUserPayments(@AuthenticationPrincipal Jwt jwt,
-                                                                              @RequestParam(name = "page", defaultValue = "page") int page,
-                                                                              @RequestParam(name = "size", defaultValue = "size") int size){
+                                                                              @RequestParam(name = "page", defaultValue = "0") int page,
+                                                                              @RequestParam(name = "size", defaultValue = "10") int size){
         Page<PaymentResponse> data = paymentService.getUserPayments(jwt.getSubject(), PageRequest.of(page, size));
         return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
     }

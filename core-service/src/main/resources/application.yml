@@ -30,7 +30,7 @@ spring:
         default_batch_fetch_size: 10
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${SPRING_KAFKA_SERVER:localhost:9092}
 
     consumer:
       group-id: core-service-group

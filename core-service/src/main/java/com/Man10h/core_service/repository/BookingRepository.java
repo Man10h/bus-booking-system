@@ -85,20 +85,16 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query("""
 SELECT new com.Man10h.core_service.model.response.TimeStatisticResponse(
-     CONCAT(
-            YEAR(b.createAt), '-',
-            LPAD(MONTH(b.createAt), 2, '0'), '-',
-            LPAD(DAY(b.createAt), 2, '0')
-        ),
-        SUM(b.totalAmount)
+    CAST(FUNCTION('TO_CHAR', b.createAt, 'YYYY-MM-dd') AS string),
+    SUM(b.totalAmount)
 )
 FROM Booking b
 WHERE b.operatorId = :operatorId
 AND b.status = :status
 AND b.createAt >= :start
 AND b.createAt < :end
-GROUP BY DAY(b.createAt), MONTH(b.createAt), YEAR(b.createAt)
-ORDER BY DAY(b.createAt)
+GROUP BY YEAR(b.createAt), MONTH(b.createAt), DAY(b.createAt)
+ORDER BY YEAR(b.createAt), MONTH(b.createAt), DAY(b.createAt)
 """)
     List<TimeStatisticResponse> statisticByDayFromStartToEnd(
             @Param("operatorId") String operatorId,
@@ -109,19 +105,16 @@ ORDER BY DAY(b.createAt)
 
     @Query("""
 SELECT new com.Man10h.core_service.model.response.TimeStatisticResponse(
-     CONCAT(
-            YEAR(b.createAt), '-',
-            LPAD(MONTH(b.createAt), 2, '0')
-        ),
-        SUM(b.totalAmount)
+    CAST(FUNCTION('TO_CHAR', b.createAt, 'YYYY-MM') AS string),
+    SUM(b.totalAmount)
 )
 FROM Booking b
 WHERE b.operatorId = :operatorId
 AND b.status = :status
 AND b.createAt >= :start
 AND b.createAt < :end
-GROUP BY MONTH(b.createAt), YEAR(b.createAt)
-ORDER BY MONTH(b.createAt)
+GROUP BY YEAR(b.createAt), MONTH(b.createAt)
+ORDER BY YEAR(b.createAt), MONTH(b.createAt)
 """)
     List<TimeStatisticResponse> statisticByMonthFromStartToEnd(
             @Param("operatorId") String operatorId,

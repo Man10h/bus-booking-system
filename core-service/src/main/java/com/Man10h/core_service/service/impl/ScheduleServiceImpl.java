@@ -132,8 +132,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
         Route route = optionalRoute.get();
         Vehicle vehicle = optionalVehicle.get();
-        if(route.getStatus() != RouteStatus.INACTIVE){
-            throw new IllegalStateException("Route Status is Inactive");
+        if(route.getStatus() != RouteStatus.ACTIVE){
+            throw new IllegalStateException("Route Status is not active");
         }
         if(vehicle.getStatus() != VehicleStatus.ACTIVE){
             throw new IllegalStateException("Vehicle Status is not active");
@@ -184,7 +184,7 @@ public class ScheduleServiceImpl implements ScheduleService {
             value = "schedules",
             key = "T(com.Man10h.core_service.util.CacheKeyUtil).scheduleKey(#filter)"
     )
-    public Page<ScheduleSummaryResponse> findSchedules(ScheduleFilter filter, Pageable pageable) {
+    public SchedulePageResponse findSchedules(ScheduleFilter filter, Pageable pageable) {
 
         Specification<Schedule> spec = Specification.allOf(
                 route(filter.routeId()),
@@ -195,7 +195,14 @@ public class ScheduleServiceImpl implements ScheduleService {
                 vehicleType(filter.vehicleTypeId()),
                 status(filter.status())
         );
-        return scheduleRepository.findAll(spec, pageable).map(this::toSummaryResponse);
+        Page<ScheduleSummaryResponse> page = scheduleRepository.findAll(spec, pageable).map(this::toSummaryResponse);
+        return new SchedulePageResponse(
+                page.getContent(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.getNumber(),
+                page.getSize()
+        );
     }
 
     @Override
@@ -203,7 +210,6 @@ public class ScheduleServiceImpl implements ScheduleService {
         List<ScheduleSeat> scheduleSeatList = scheduleSeatRepository.findBySchedule_Id(id);
 
         return scheduleSeatList.stream()
-                .filter(scheduleSeat -> !scheduleSeat.getSeat().getStatus().equals(SeatStatus.INACTIVE))
                 .map(
                 scheduleSeat -> {
                     return new ScheduleSeatResponse(
@@ -266,8 +272,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
         Route route = optionalRoute.get();
         Vehicle vehicle = optionalVehicle.get();
-        if(route.getStatus() != RouteStatus.INACTIVE){
-            throw new IllegalStateException("Route Status is Inactive");
+        if(route.getStatus() != RouteStatus.ACTIVE){
+            throw new IllegalStateException("Route Status is not active");
         }
         if(vehicle.getStatus() != VehicleStatus.ACTIVE){
             throw new IllegalStateException("Vehicle Status is not active");
@@ -289,12 +295,12 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     }
 
-    @Override
+    @Transactional
     public void updateRunningSchedules() {
         scheduleRepository.updateRunningSchedules(LocalDateTime.now());
     }
 
-    @Override
+    @Transactional
     public void updateCompletedSchedules() {
         LocalDateTime now = LocalDateTime.now();
         scheduleRepository.updateCompletedSchedules(now);

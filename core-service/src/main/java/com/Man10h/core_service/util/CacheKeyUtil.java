@@ -20,13 +20,11 @@ public class CacheKeyUtil {
 
     public static String routeKey(RouteFilter filter) {
         return String.format(
-                "dc=%s:ac=%s:op=%s:s=%s:p=%d:sz=%d",
+                "dc=%s:ac=%s:op=%s:s=%s",
                 value(filter.departureCityId()),
                 value(filter.arrivalCityId()),
                 value(filter.operatorId()),
-                value(filter.status()),
-                filter.page(),
-                filter.size()
+                value(filter.status())
         );
     }
 

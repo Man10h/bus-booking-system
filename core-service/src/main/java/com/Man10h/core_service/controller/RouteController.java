@@ -7,6 +7,7 @@ import com.Man10h.core_service.model.response.*;
 import com.Man10h.core_service.service.RouteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,8 +21,10 @@ public class RouteController {
     private final RouteService routeService;
 
     @GetMapping("/routes")
-    public ResponseEntity<ApiResponse<Page<RouteSummaryResponse>>> findRoutes(@ModelAttribute RouteFilter request) {
-        Page<RouteSummaryResponse> data = routeService.findRoutes(request);
+    public ResponseEntity<ApiResponse<RoutePageResponse>> findRoutes(@ModelAttribute RouteFilter request,
+                                                                     @RequestParam(name = "page", defaultValue = "0") int page,
+                                                                     @RequestParam(name = "size", defaultValue = "10") int size) {
+        RoutePageResponse data = routeService.findRoutes(request, PageRequest.of(page, size));
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
     }
 

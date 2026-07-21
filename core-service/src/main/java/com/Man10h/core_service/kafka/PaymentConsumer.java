@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 public class PaymentConsumer {
 
     private final BookingService bookingService;
+    private final ObjectMapper objectMapper;
 
     @KafkaListener(
             topics = "${kafka.topics.payment-success}",
@@ -24,7 +25,7 @@ public class PaymentConsumer {
     )
     public void onPaymentSuccess(ConsumerRecord<String, String> record, Acknowledgment ack) {
         try{
-            PaymentResponse paymentResponse = new ObjectMapper().readValue(record.value(), PaymentResponse.class);
+            PaymentResponse paymentResponse = objectMapper.readValue(record.value(), PaymentResponse.class);
             bookingService.updateBookingPaidStatus(paymentResponse.bookingId());
 
             ack.acknowledge();

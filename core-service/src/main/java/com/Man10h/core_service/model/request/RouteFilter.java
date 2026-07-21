@@ -4,8 +4,6 @@ public record RouteFilter(
         Long departureCityId,
         Long arrivalCityId,
         String operatorId,
-        String status,
-        int page,
-        int size
+        String status
 ) {
 }

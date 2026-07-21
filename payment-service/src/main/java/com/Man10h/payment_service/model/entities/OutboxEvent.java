@@ -3,6 +3,8 @@ package com.Man10h.payment_service.model.entities;
 import com.Man10h.payment_service.model.enums.OutboxStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -22,6 +24,7 @@ public class OutboxEvent {
     private String aggregateType;   // BOOKING
     private Long aggregateId;// bookingId
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private String payload;
 

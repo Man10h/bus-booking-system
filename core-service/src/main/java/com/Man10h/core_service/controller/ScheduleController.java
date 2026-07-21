@@ -50,12 +50,12 @@ public class ScheduleController {
     }
 
     @GetMapping("/schedules")
-    public ResponseEntity<ApiResponse<Page<ScheduleSummaryResponse>>> findSchedules(
+    public ResponseEntity<ApiResponse<SchedulePageResponse>> findSchedules(
             @ModelAttribute ScheduleFilter scheduleFilter,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size
             ){
-        Page<ScheduleSummaryResponse> data = scheduleService.findSchedules(scheduleFilter, PageRequest.of(page, size));
+        SchedulePageResponse data = scheduleService.findSchedules(scheduleFilter, PageRequest.of(page, size));
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
     }
 

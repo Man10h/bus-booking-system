@@ -32,7 +32,7 @@ public class StatisticController {
     @PreAuthorize("hasRole('OPERATOR')")
     @GetMapping("/statistic/revenue")
     public ResponseEntity<ApiResponse<List<TimeStatisticResponse>>> getRevenueByFilter(@AuthenticationPrincipal Jwt jwt,
-                                                                                           @ModelAttribute StatisticFilter filter) {
+                                                                                       @ModelAttribute StatisticFilter filter) {
         List<TimeStatisticResponse> data = bookingService.getTimeStatistic(jwt.getSubject(), filter);
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
     }

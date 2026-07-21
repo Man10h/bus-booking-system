@@ -35,7 +35,7 @@ public class Booking {
 
     private Boolean notified;
 
-    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "booking")
     private List<ScheduleSeat> scheduleSeatList;
 
     @ManyToOne
