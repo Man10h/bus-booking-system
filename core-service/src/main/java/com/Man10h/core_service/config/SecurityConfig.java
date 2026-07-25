@@ -51,7 +51,7 @@ public class SecurityConfig {
 
         return converter;
     }
-
+//authentication ROLE_USER
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -63,6 +63,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/core/routes/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/core/schedules**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/core/schedules/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/core/operators").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/core/cities").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(
                         jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())

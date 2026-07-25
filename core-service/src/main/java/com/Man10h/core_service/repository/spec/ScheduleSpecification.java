@@ -66,7 +66,7 @@ public class ScheduleSpecification {
                 return null;
             }
             Join<Schedule, Route> scheduleRouteJoin = root.join("route", JoinType.INNER);
-            Join<Route, City> routeCityJoin = scheduleRouteJoin.join("routeArrivalCity", JoinType.INNER);
+            Join<Route, City> routeCityJoin = scheduleRouteJoin.join("arrivalCity", JoinType.INNER);
 
             return cb.equal(routeCityJoin.get("id"), routeArrivalCity);
         };

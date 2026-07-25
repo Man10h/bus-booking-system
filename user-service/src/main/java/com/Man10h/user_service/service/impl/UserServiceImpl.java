@@ -221,6 +221,16 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
+    @Transactional
+    public void unlockUser(String userId) {
+        User user = getUserById(userId);
+        if(user.getEnabled()){
+            throw new AccountEnabledException("Account already enabled");
+        }
+        user.setEnabled(true);
+        userRepository.save(user);
+    }
+
     @Override
     public void promoteUserToOperator(String userId) {
         User user = getUserById(userId);

@@ -1,11 +1,11 @@
 package com.Man10h.core_service.controller;
 
-import com.Man10h.core_service.model.request.CreateVehicleRequest;
-import com.Man10h.core_service.model.request.UpdateSeatStatusRequest;
-import com.Man10h.core_service.model.request.UpdateVehicleRequest;
+import com.Man10h.core_service.model.enums.SeatType;
+import com.Man10h.core_service.model.request.*;
 import com.Man10h.core_service.model.response.ApiResponse;
 import com.Man10h.core_service.model.response.SeatResponse;
 import com.Man10h.core_service.model.response.VehicleResponse;
+import com.Man10h.core_service.model.response.VehicleTypeResponse;
 import com.Man10h.core_service.service.VehicleService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -95,5 +95,41 @@ public class VehicleController {
                                                               @AuthenticationPrincipal Jwt jwt){
         vehicleService.updateSeatVipStatus(seatId, jwt.getSubject());
         return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
+    }
+
+    @PreAuthorize("hasAnyRole('OPERATOR', 'ADMIN')")
+    @GetMapping("/vehicleTypes")
+    public ResponseEntity<ApiResponse<List<VehicleTypeResponse>>> getVehicleTypes() {
+        List<VehicleTypeResponse> data = vehicleService.getAllVehicleTypes();
+        return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PostMapping("/vehicleTypes")
+    public ResponseEntity<ApiResponse<VehicleTypeResponse>> createVehicleType(@RequestBody @Valid CreateVehicleTypeRequest request){
+        VehicleTypeResponse data = vehicleService.createVehicleType(request);
+        return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PutMapping("/vehicleTypes/{vehicleTypeId}")
+    public ResponseEntity<ApiResponse<?>> updateVehicleType(@PathVariable Long vehicleTypeId,
+                                                            @RequestBody @Valid UpdateVehicleTypeRequest request){
+        vehicleService.updateVehicleType(vehicleTypeId, request);
+        return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    @DeleteMapping("/vehicleTypes/{vehicleTypeId}")
+    public ResponseEntity<ApiResponse<?>> deleteVehicleType(@PathVariable Long vehicleTypeId) {
+        vehicleService.deleteVehicleType(vehicleTypeId);
+        return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    @GetMapping("/seatType")
+    public ResponseEntity<ApiResponse<List<SeatType>>> getSeatTypes() {
+        List<SeatType> data = List.of(SeatType.SEAT, SeatType.BED);
+        return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
     }
 }

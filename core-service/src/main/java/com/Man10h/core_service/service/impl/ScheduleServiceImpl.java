@@ -10,6 +10,7 @@ import com.Man10h.core_service.model.response.*;
 import com.Man10h.core_service.repository.*;
 import com.Man10h.core_service.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -27,6 +28,7 @@ import java.util.Optional;
 import static com.Man10h.core_service.repository.spec.ScheduleSpecification.*;
 
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ScheduleServiceImpl implements ScheduleService {
@@ -41,6 +43,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         VehicleType vehicleType = vehicle.getVehicleType();
         VehicleTypeResponse vehicleTypeResponse = new VehicleTypeResponse(
                 vehicleType.getId(),
+                vehicleType.getSeatType(),
                 vehicleType.getCode(),
                 vehicleType.getName(),
                 vehicleType.getFloors(),
@@ -182,7 +185,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Override
     @Cacheable(
             value = "schedules",
-            key = "T(com.Man10h.core_service.util.CacheKeyUtil).scheduleKey(#filter)"
+            key = "T(com.Man10h.core_service.util.CacheKeyUtil).scheduleKey(#filter, #pageable)"
     )
     public SchedulePageResponse findSchedules(ScheduleFilter filter, Pageable pageable) {
 
@@ -248,9 +251,11 @@ public class ScheduleServiceImpl implements ScheduleService {
             throw new AccessDeniedException("Operator does not have access to the schedule");
         }
         if(schedule.getStatus() != ScheduleStatus.OPEN){
+            log.info("=====SCHEDULE IS OPEN=====");
             throw new IllegalStateException("Schedule is not open");
         }
         if(scheduleSeatRepository.existsBySchedule_IdAndStatusIn(id, List.of(ScheduleSeatStatus.BOOKED, ScheduleSeatStatus.HELD))){
+            log.info("=====SCHEDULE SEAT IS HELD OR BOOKED=====");
             throw new IllegalStateException("Schedule seat is in progress");
         }
         schedule.setStatus(ScheduleStatus.CANCELLED);

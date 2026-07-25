@@ -87,7 +87,7 @@ public class RouteServiceImpl implements RouteService {
     @Override
     @Cacheable(
             value = "routes",
-            key = "T(com.Man10h.core_service.util.CacheKeyUtil).routeKey(#request)"
+            key = "T(com.Man10h.core_service.util.CacheKeyUtil).routeKey(#request, #pageable)"
     )
     public RoutePageResponse findRoutes(RouteFilter request, Pageable pageable) {
         Specification<Route> spec = Specification.anyOf(

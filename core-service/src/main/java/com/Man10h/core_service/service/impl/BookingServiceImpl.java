@@ -9,6 +9,7 @@ import com.Man10h.core_service.model.entities.Operator;
 import com.Man10h.core_service.model.entities.Schedule;
 import com.Man10h.core_service.model.entities.ScheduleSeat;
 import com.Man10h.core_service.model.enums.*;
+import com.Man10h.core_service.model.request.BookingFilter;
 import com.Man10h.core_service.model.request.CreateBookingRequest;
 import com.Man10h.core_service.model.request.StatisticFilter;
 import com.Man10h.core_service.model.response.*;
@@ -19,8 +20,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +35,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import static com.Man10h.core_service.repository.spec.BookingSpecification.*;
 
 @Service
 @RequiredArgsConstructor
@@ -196,6 +201,26 @@ public class BookingServiceImpl implements BookingService {
         });
         booking.getScheduleSeatList().clear();
         bookingRepository.save(booking);
+    }
+
+    @Cacheable(value = "bookings", key = "T(com.Man10h.core_service.util.CacheKeyUtil).bookingKey(#bookingFilter, #pageable)")
+    @Override
+    public BookingPageResponse findUserBookingsByFilter(String userId, BookingFilter bookingFilter, Pageable pageable) {
+        Specification<Booking> spec = Specification.allOf(
+                user(userId),
+                operator(bookingFilter.operatorId()),
+                departureTime(bookingFilter.departureTime()),
+                arrivalTime(bookingFilter.arrivalTime())
+        );
+        Page<BookingSummaryResponse> page = bookingRepository.findAll(spec, pageable)
+                .map(this::toBookingSummaryResponse);
+        return new BookingPageResponse(
+                page.getContent(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.getNumber(),
+                page.getSize()
+        );
     }
 
     @Override

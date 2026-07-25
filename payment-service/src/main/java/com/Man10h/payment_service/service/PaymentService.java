@@ -10,4 +10,5 @@ import java.util.Map;
 public interface PaymentService {
     public String createPayment(String userId, CreatePaymentRequest createPaymentRequest);
     public Page<PaymentResponse> getUserPayments(String userId, Pageable pageable);
+
 }

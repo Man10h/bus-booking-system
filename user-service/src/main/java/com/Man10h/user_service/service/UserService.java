@@ -19,5 +19,6 @@ public interface UserService {
     public void changePassword(String userId, ChangePasswordRequest request);
     public Page<UserResponse> findAllUsers(Pageable pageable);
     public void lockUser(String userId);
+    public void unlockUser(String userId);
     public void promoteUserToOperator(String userId);
 }

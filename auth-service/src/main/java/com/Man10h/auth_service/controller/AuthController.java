@@ -24,7 +24,8 @@ import java.util.Map;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
-
+// auth serrvice => expose ra 1 api thoong tin khoa de verify token
+// service cau hinh api day => đọc => config phân quyền // token core service doc thông tin => chuyển thành quyền trong core service
     private final AuthService authService;
     private final TokenService tokenService;
     private final JWKSet jwkSet;

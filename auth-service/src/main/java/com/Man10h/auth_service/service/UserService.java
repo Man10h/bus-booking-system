@@ -16,4 +16,5 @@ public interface UserService {
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable String userId,
                                                              @RequestHeader("Authorization") String bearerToken);
+
 }

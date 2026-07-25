@@ -1,5 +1,6 @@
 package com.Man10h.core_service.service;
 
+import com.Man10h.core_service.model.request.BookingFilter;
 import com.Man10h.core_service.model.request.CreateBookingRequest;
 import com.Man10h.core_service.model.request.StatisticFilter;
 import com.Man10h.core_service.model.response.*;
@@ -14,7 +15,7 @@ public interface BookingService {
     public Page<BookingSummaryResponse> getUserBookings(String userId, Pageable pageable);
     public BookingSummaryResponse getBookingById(Long bookingId);
     public void cancelBooking(String userId, Long bookingId);
-
+    public BookingPageResponse findUserBookingsByFilter(String userId, BookingFilter bookingFilter, Pageable pageable);
 
     public void updateBookingPaidStatus(Long bookingId);
     public void updateBookingCancellation();

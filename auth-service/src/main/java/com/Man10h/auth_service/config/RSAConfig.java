@@ -55,6 +55,8 @@ public class RSAConfig {
         }
     }
 
+    
+
     @Bean
     public RSAPublicKey publicKey() {
         String key = null;

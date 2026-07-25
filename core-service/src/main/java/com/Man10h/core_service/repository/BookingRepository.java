@@ -1,6 +1,7 @@
 package com.Man10h.core_service.repository;
 
 import com.Man10h.core_service.model.entities.Booking;
+import com.Man10h.core_service.model.entities.Route;
 import com.Man10h.core_service.model.enums.BookingStatus;
 import com.Man10h.core_service.model.response.DepartureReminderResponse;
 import com.Man10h.core_service.model.response.TimeStatisticResponse;
@@ -8,10 +9,8 @@ import com.Man10h.core_service.model.response.TopRouteResponse;
 import com.Man10h.core_service.model.response.TopVehicleResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
@@ -19,7 +18,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface BookingRepository extends JpaRepository<Booking, Long> {
+public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpecificationExecutor<Booking> {
 
     @EntityGraph(attributePaths = {
             "schedule",
@@ -29,6 +28,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     SELECT b FROM Booking b WHERE b.userId = :userId AND b.id = :id
 """)
     Optional<Booking> getBookingDetailByIdAndUserId(@Param("id") Long id, @Param("userId") String userId);
+
+    Page<Booking> findAll(Specification<Booking> spec, Pageable pageable);
 
     Page<Booking> findByUserId(String userId, Pageable pageable);
 
@@ -85,7 +86,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query("""
 SELECT new com.Man10h.core_service.model.response.TimeStatisticResponse(
-    CAST(FUNCTION('TO_CHAR', b.createAt, 'YYYY-MM-dd') AS string),
+    CAST(FUNCTION('DATE_TRUNC', 'day', b.createAt) AS string),
     SUM(b.totalAmount)
 )
 FROM Booking b
@@ -93,8 +94,8 @@ WHERE b.operatorId = :operatorId
 AND b.status = :status
 AND b.createAt >= :start
 AND b.createAt < :end
-GROUP BY YEAR(b.createAt), MONTH(b.createAt), DAY(b.createAt)
-ORDER BY YEAR(b.createAt), MONTH(b.createAt), DAY(b.createAt)
+GROUP BY FUNCTION('DATE_TRUNC', 'day', b.createAt)
+ORDER BY FUNCTION('DATE_TRUNC', 'day', b.createAt)
 """)
     List<TimeStatisticResponse> statisticByDayFromStartToEnd(
             @Param("operatorId") String operatorId,
@@ -105,7 +106,7 @@ ORDER BY YEAR(b.createAt), MONTH(b.createAt), DAY(b.createAt)
 
     @Query("""
 SELECT new com.Man10h.core_service.model.response.TimeStatisticResponse(
-    CAST(FUNCTION('TO_CHAR', b.createAt, 'YYYY-MM') AS string),
+    CAST(FUNCTION('DATE_TRUNC', 'month', b.createAt) AS string),
     SUM(b.totalAmount)
 )
 FROM Booking b
@@ -113,8 +114,8 @@ WHERE b.operatorId = :operatorId
 AND b.status = :status
 AND b.createAt >= :start
 AND b.createAt < :end
-GROUP BY YEAR(b.createAt), MONTH(b.createAt)
-ORDER BY YEAR(b.createAt), MONTH(b.createAt)
+GROUP BY FUNCTION('DATE_TRUNC', 'month', b.createAt)
+ORDER BY FUNCTION('DATE_TRUNC', 'month', b.createAt)
 """)
     List<TimeStatisticResponse> statisticByMonthFromStartToEnd(
             @Param("operatorId") String operatorId,

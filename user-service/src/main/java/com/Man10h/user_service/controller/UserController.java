@@ -89,9 +89,16 @@ public class UserController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/{userId}/lock")
+    @PatchMapping("/{userId}/lock")
     public ResponseEntity<ApiResponse<UserResponse>> lockUser(@PathVariable String userId) {
         userService.lockUser(userId);
+        return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/{userId}/unlock")
+    public ResponseEntity<ApiResponse<UserResponse>> unlock(@PathVariable String userId) {
+        userService.unlockUser(userId);
         return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
     }
 

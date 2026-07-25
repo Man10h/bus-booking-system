@@ -38,7 +38,7 @@ public class TokenServiceImpl implements TokenService {
     public String generateUserToken(UserResponse userResponse) {
         JWTClaimsSet claim = new JWTClaimsSet.Builder()
                 .subject(userResponse.id())
-                .claim("roles", List.of(userResponse.role()))
+                .claim("roles", List.of(userResponse.role())) //U
                 .claim("scope", "")
                 .claim("token_type", "user")
                 .expirationTime(new Date(new Date().getTime() + 1000 * 60 * 60 * 3))

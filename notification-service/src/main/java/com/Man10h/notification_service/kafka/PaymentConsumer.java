@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PaymentConsumer {
 
+    private final ObjectMapper objectMapper;
     private final NotificationService notificationService;
 
     @KafkaListener(
@@ -22,7 +23,7 @@ public class PaymentConsumer {
     )
     public void onPaymentSuccess(ConsumerRecord<String, String> record, Acknowledgment ack) {
         try{
-            PaymentResponse paymentResponse = new ObjectMapper().readValue(record.value(), PaymentResponse.class);
+            PaymentResponse paymentResponse = objectMapper.readValue(record.value(), PaymentResponse.class);
             //create notification + send
             notificationService.createAndSendNotification(paymentResponse.userId(), String.format("The #%s payment is successful.", paymentResponse.txnRef()), paymentResponse.txnRef());
             ack.acknowledge();

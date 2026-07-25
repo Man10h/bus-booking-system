@@ -14,7 +14,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(RouteNotFoundException.class)
     public ResponseEntity<ErrorResponse> routeNotFoundException(RouteNotFoundException ex){
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 new ErrorResponse(
                         HttpStatus.NOT_FOUND.getReasonPhrase(),
                         HttpStatus.NOT_FOUND.value(),
@@ -26,7 +26,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(OperatorNotFoundException.class)
     public ResponseEntity<ErrorResponse> operatorNotFoundException(OperatorNotFoundException ex){
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 new ErrorResponse(
                         HttpStatus.NOT_FOUND.getReasonPhrase(),
                         HttpStatus.NOT_FOUND.value(),
@@ -38,7 +38,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(CityNotFoundException.class)
     public ResponseEntity<ErrorResponse> cityNotFoundException(CityNotFoundException ex){
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 new ErrorResponse(
                         HttpStatus.NOT_FOUND.getReasonPhrase(),
                         HttpStatus.NOT_FOUND.value(),
@@ -50,7 +50,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(RouteCodeAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> routeCodeAlreadyExistsException(RouteCodeAlreadyExistsException ex){
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
                 new ErrorResponse(
                         HttpStatus.CONFLICT.getReasonPhrase(),
                         HttpStatus.CONFLICT.value(),
@@ -62,7 +62,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(RouteStopNotFoundException.class)
     public ResponseEntity<ErrorResponse> routeStopNotFoundException(RouteStopNotFoundException ex){
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 new ErrorResponse(
                         HttpStatus.NOT_FOUND.getReasonPhrase(),
                         HttpStatus.NOT_FOUND.value(),
@@ -74,7 +74,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(OperatorAlreadyRegisterException.class)
     public ResponseEntity<ErrorResponse> operatorAlreadyRegisterException(OperatorAlreadyRegisterException ex){
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
                 new ErrorResponse(
                         HttpStatus.CONFLICT.getReasonPhrase(),
                         HttpStatus.CONFLICT.value(),
@@ -86,7 +86,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(VehicleTypeNotFoundException.class)
     public ResponseEntity<ErrorResponse> vehicleTypeNotFoundException(VehicleTypeNotFoundException ex){
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 new ErrorResponse(
                         HttpStatus.NOT_FOUND.getReasonPhrase(),
                         HttpStatus.NOT_FOUND.value(),
@@ -98,7 +98,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(VehicleNotFoundException.class)
     public ResponseEntity<ErrorResponse> vehicleTypeNotFoundException(VehicleNotFoundException ex){
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 new ErrorResponse(
                         HttpStatus.NOT_FOUND.getReasonPhrase(),
                         HttpStatus.NOT_FOUND.value(),
@@ -110,7 +110,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> accessDeniedException(AccessDeniedException ex){
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
                 new ErrorResponse(
                         HttpStatus.FORBIDDEN.getReasonPhrase(),
                         HttpStatus.FORBIDDEN.value(),
@@ -122,7 +122,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(SeatNotFoundException.class)
     public ResponseEntity<ErrorResponse> seatNotFoundException(SeatNotFoundException ex){
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
                 new ErrorResponse(
                         HttpStatus.FORBIDDEN.getReasonPhrase(),
                         HttpStatus.FORBIDDEN.value(),
@@ -134,7 +134,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResponse> illegalStateException(IllegalStateException ex){
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
                 new ErrorResponse(
                         HttpStatus.CONFLICT.getReasonPhrase(),
                         HttpStatus.CONFLICT.value(),
@@ -146,7 +146,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(ScheduleNotFoundException.class)
     public ResponseEntity<ErrorResponse> scheduleNotFoundException(ScheduleNotFoundException ex){
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 new ErrorResponse(
                         HttpStatus.NOT_FOUND.getReasonPhrase(),
                         HttpStatus.NOT_FOUND.value(),
@@ -158,7 +158,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(BookingNotFoundException.class)
     public ResponseEntity<ErrorResponse> bookingNotFoundException(BookingNotFoundException ex){
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 new ErrorResponse(
                         HttpStatus.NOT_FOUND.getReasonPhrase(),
                         HttpStatus.NOT_FOUND.value(),
@@ -170,10 +170,22 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(GlobalException.class)
     public ResponseEntity<ErrorResponse> globalException(GlobalException ex){
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 new ErrorResponse(
                         HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
                         HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                )
+        );
+    }
+
+    @ExceptionHandler(VehicleTypeAlreadyInUseException.class)
+    public ResponseEntity<ErrorResponse> vehicleTypeAlreadyInUseException(VehicleTypeAlreadyInUseException ex){
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                new ErrorResponse(
+                        HttpStatus.CONFLICT.getReasonPhrase(),
+                        HttpStatus.CONFLICT.value(),
                         ex.getMessage(),
                         LocalDateTime.now()
                 )

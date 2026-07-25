@@ -5,12 +5,11 @@ import com.Man10h.core_service.model.entities.Operator;
 import com.Man10h.core_service.model.entities.Seat;
 import com.Man10h.core_service.model.entities.Vehicle;
 import com.Man10h.core_service.model.entities.VehicleType;
-import com.Man10h.core_service.model.enums.ScheduleSeatStatus;
-import com.Man10h.core_service.model.enums.ScheduleStatus;
-import com.Man10h.core_service.model.enums.SeatStatus;
-import com.Man10h.core_service.model.enums.VehicleStatus;
+import com.Man10h.core_service.model.enums.*;
 import com.Man10h.core_service.model.request.CreateVehicleRequest;
+import com.Man10h.core_service.model.request.CreateVehicleTypeRequest;
 import com.Man10h.core_service.model.request.UpdateVehicleRequest;
+import com.Man10h.core_service.model.request.UpdateVehicleTypeRequest;
 import com.Man10h.core_service.model.response.OperatorResponse;
 import com.Man10h.core_service.model.response.SeatResponse;
 import com.Man10h.core_service.model.response.VehicleResponse;
@@ -24,8 +23,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -67,6 +68,7 @@ public class VehicleServiceImpl implements VehicleService {
         VehicleType vehicleType = vehicle.getVehicleType();
         VehicleTypeResponse vehicleTypeResponse = new VehicleTypeResponse(
                 vehicleType.getId(),
+                vehicleType.getSeatType(),
                 vehicleType.getCode(),
                 vehicleType.getName(),
                 vehicleType.getFloors(),
@@ -96,14 +98,15 @@ public class VehicleServiceImpl implements VehicleService {
         if(optionalVehicleType.isEmpty()) {
             throw new VehicleTypeNotFoundException("Vehicle type not found");
         }
+        VehicleType vehicleType = optionalVehicleType.get();
         Vehicle vehicle = Vehicle.builder()
                 .brand(request.brand())
                 .model(request.model())
                 .licensePlate(request.licensePlate())
                 .description(request.description())
-                .totalSeats(request.totalSeats())
+                .totalSeats((long) vehicleType.getRows() * vehicleType.getCols() * vehicleType.getFloors())
                 .status(VehicleStatus.ACTIVE)
-                .vehicleType(vehicleTypeRepository.getReferenceById(request.vehicleTypeId()))
+                .vehicleType(vehicleType)
                 .operator(operator)
                 .build();
 
@@ -234,6 +237,72 @@ public class VehicleServiceImpl implements VehicleService {
         Seat seat = optional.get();
         seat.setIsVip(!seat.getIsVip());
         seatRepository.save(seat);
+    }
+
+    @Override
+    public List<VehicleTypeResponse> getAllVehicleTypes() {
+        return vehicleTypeRepository.findAll().stream().map(vehicleType -> new VehicleTypeResponse(
+                vehicleType.getId(),
+                vehicleType.getSeatType(),
+                vehicleType.getCode(),
+                vehicleType.getName(),
+                vehicleType.getFloors(),
+                vehicleType.getRows(),
+                vehicleType.getCols()
+        )).collect(Collectors.toList());
+    }
+
+    @Override
+    public VehicleTypeResponse createVehicleType(CreateVehicleTypeRequest request) {
+        VehicleType vehicleType = VehicleType.builder()
+                .vehicles(new ArrayList<>())
+                .code(request.code())
+                .name(request.name())
+                .floors(request.floors())
+                .rows(request.rows())
+                .cols(request.cols())
+                .seatType(SeatType.valueOf(request.seatType()))
+                .build();
+        vehicleTypeRepository.save(vehicleType);
+        return new VehicleTypeResponse(
+                vehicleType.getId(),
+                vehicleType.getSeatType(),
+                vehicleType.getCode(),
+                vehicleType.getName(),
+                vehicleType.getFloors(),
+                vehicleType.getRows(),
+                vehicleType.getCols()
+        );
+    }
+
+    @Transactional
+    public void updateVehicleType(Long id, UpdateVehicleTypeRequest request) {
+        VehicleType vehicleType = vehicleTypeRepository.getVehicleTypeById(id)
+                .orElseThrow(() -> new VehicleNotFoundException("Vehicle not found"));
+        if(vehicleType.getVehicles() == null || vehicleType.getVehicles().isEmpty()){
+            vehicleType.setName(request.name());
+            vehicleType.setCode(request.code());
+            vehicleType.setFloors(request.floors());
+            vehicleType.setRows(request.rows());
+            vehicleType.setCols(request.cols());
+            vehicleType.setSeatType(SeatType.valueOf(request.seatType()));
+            vehicleTypeRepository.save(vehicleType);
+        }
+        else {
+            throw new VehicleTypeAlreadyInUseException("Vehicle type already in use");
+        }
+    }
+
+    @Transactional
+    public void deleteVehicleType(Long id) {
+        VehicleType vehicleType = vehicleTypeRepository.getVehicleTypeById(id)
+                .orElseThrow(() -> new VehicleNotFoundException("Vehicle not found"));
+        if(vehicleType.getVehicles() == null || vehicleType.getVehicles().isEmpty()){
+            vehicleTypeRepository.delete(vehicleType);
+        }
+        else {
+            throw new VehicleTypeAlreadyInUseException("Vehicle type already in use");
+        }
     }
 
 

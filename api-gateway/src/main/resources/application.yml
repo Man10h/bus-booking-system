@@ -21,3 +21,6 @@ eureka:
 logging:
   level:
     org.springframework.security: TRACE
+
+frontend:
+  url: ${FRONTEND_URL:http://localhost:3000}

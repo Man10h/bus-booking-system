@@ -59,6 +59,10 @@ public class RedisConfig {
                         defaultConfig.entryTtl(Duration.ofMinutes(3))
                 )
 
+                .withCacheConfiguration(
+                        "bookings",
+                        defaultConfig.entryTtl(Duration.ofMinutes(3))
+                )
                 .build();
     }
 

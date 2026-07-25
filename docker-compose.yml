@@ -282,6 +282,7 @@ services:
     environment:
       EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
       SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
+      FRONTEND_URL: http://localhost:3000
     networks:
       - bus-network
 
@@ -301,7 +302,21 @@ services:
     networks:
       - bus-network
 
+  # Frontend Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - bus-network
+
 networks:
+
   bus-network:
     driver: bridge
 

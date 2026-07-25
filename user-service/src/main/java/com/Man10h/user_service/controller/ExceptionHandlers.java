@@ -14,7 +14,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(AccountExistsException.class)
     public ResponseEntity<ErrorResponse> accountExistsException(AccountExistsException e) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
                 new ErrorResponse(
                         HttpStatus.CONFLICT.getReasonPhrase(),
                         HttpStatus.CONFLICT.value(),
@@ -27,7 +27,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(RoleNotFoundException.class)
     public ResponseEntity<ErrorResponse> roleNotFoundException(RoleNotFoundException e) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 new ErrorResponse(
                         HttpStatus.NOT_FOUND.getReasonPhrase(),
                         HttpStatus.NOT_FOUND.value(),
@@ -39,7 +39,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorResponse> userNotFoundException(UserNotFoundException e) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 new ErrorResponse(
                         HttpStatus.NOT_FOUND.getReasonPhrase(),
                         HttpStatus.NOT_FOUND.value(),
@@ -51,7 +51,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(AccountEnabledException.class)
     public ResponseEntity<ErrorResponse> accountEnabledException(AccountEnabledException e) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
                 new ErrorResponse(
                         HttpStatus.CONFLICT.getReasonPhrase(),
                         HttpStatus.CONFLICT.value(),
@@ -63,7 +63,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(AccountNotEnabledException.class)
     public ResponseEntity<ErrorResponse> accountNotEnabledException(AccountNotEnabledException e) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 new ErrorResponse(
                         HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                         HttpStatus.UNAUTHORIZED.value(),
@@ -75,7 +75,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(AuthenticationFailedException.class)
     public ResponseEntity<ErrorResponse> authenticationFailedException(AuthenticationFailedException e) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 new ErrorResponse(
                         HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                         HttpStatus.UNAUTHORIZED.value(),
@@ -87,7 +87,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(GlobalException.class)
     public ResponseEntity<ErrorResponse> globalException(GlobalException e) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 new ErrorResponse(
                         HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
                         HttpStatus.INTERNAL_SERVER_ERROR.value(),

@@ -14,7 +14,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(MerchantNotFound.class)
     public ResponseEntity<ErrorResponse> merchantNotFound(MerchantNotFound e) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 new ErrorResponse(
                         HttpStatus.NOT_FOUND.getReasonPhrase(),
                         HttpStatus.NOT_FOUND.value(),
@@ -27,7 +27,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(InvalidAccessException.class)
     public ResponseEntity<ErrorResponse> invalidAccessException(InvalidAccessException e) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 new ErrorResponse(
                         HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                         HttpStatus.UNAUTHORIZED.value(),
@@ -39,7 +39,19 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(MerchantAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> merchantAlreadyExistsException(MerchantAlreadyExistsException e) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                new ErrorResponse(
+                        HttpStatus.CONFLICT.getReasonPhrase(),
+                        HttpStatus.CONFLICT.value(),
+                        e.getMessage(),
+                        LocalDateTime.now()
+                )
+        );
+    }
+
+    @ExceptionHandler(MerchantAlreadyInUserException.class)
+    public ResponseEntity<ErrorResponse> merchantAlreadyInUserException(MerchantAlreadyInUserException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
                 new ErrorResponse(
                         HttpStatus.CONFLICT.getReasonPhrase(),
                         HttpStatus.CONFLICT.value(),
@@ -51,7 +63,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(InvalidBookingException.class)
     public ResponseEntity<ErrorResponse> invalidBookingException(InvalidBookingException e) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 new ErrorResponse(
                         HttpStatus.BAD_REQUEST.getReasonPhrase(),
                         HttpStatus.BAD_REQUEST.value(),
@@ -63,10 +75,22 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(MerchantInActiveException.class)
     public ResponseEntity<ErrorResponse> merchantInActiveException(MerchantInActiveException e) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
                 new ErrorResponse(
                         HttpStatus.FORBIDDEN.getReasonPhrase(),
                         HttpStatus.FORBIDDEN.value(),
+                        e.getMessage(),
+                        LocalDateTime.now()
+                )
+        );
+    }
+
+    @ExceptionHandler(GlobalException.class)
+    public ResponseEntity<ErrorResponse> globalException(GlobalException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                new ErrorResponse(
+                        HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
                         e.getMessage(),
                         LocalDateTime.now()
                 )

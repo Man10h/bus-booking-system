@@ -15,7 +15,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(NotificationNotFoundException.class)
     public ResponseEntity<ErrorResponse> notificationNotFound(NotificationNotFoundException ex) {
-        return ResponseEntity.ok(new ErrorResponse(
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(
                 HttpStatus.NOT_FOUND.getReasonPhrase(),
                 HttpStatus.NOT_FOUND.value(),
                 ex.getMessage(),
@@ -25,7 +25,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> accessDeniedException(AccessDeniedException ex) {
-        return ResponseEntity.ok(new ErrorResponse(
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(
                 HttpStatus.FORBIDDEN.getReasonPhrase(),
                 HttpStatus.FORBIDDEN.value(),
                 ex.getMessage(),

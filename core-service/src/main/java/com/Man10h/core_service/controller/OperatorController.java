@@ -16,11 +16,19 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RequestMapping("/core")
 @RestController
 @RequiredArgsConstructor
 public class OperatorController {
     private final OperatorService operatorService;
+
+    @GetMapping("/operators")
+    public ResponseEntity<ApiResponse<List<OperatorResponse>>> getAllOperators() {
+        List<OperatorResponse> data = operatorService.getAllOperators();
+        return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
+    }
 
     @PreAuthorize("hasRole('OPERATOR')")
     @GetMapping("/operators/me")

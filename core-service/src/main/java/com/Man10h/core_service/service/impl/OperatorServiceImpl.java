@@ -13,7 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -75,6 +77,13 @@ public class OperatorServiceImpl implements OperatorService {
         }
         Operator operator = optional.get();
         return new OperatorResponse(operator.getId(), operator.getCompanyName(), operator.getContactPhone(), operator.getTaxCode(), operator.getAvatarUrl());
+    }
+
+    @Override
+    public List<OperatorResponse> getAllOperators() {
+        return operatorRepository.findAll()
+                .stream().map(operator -> new OperatorResponse(operator.getId(), operator.getCompanyName(), operator.getContactPhone(), operator.getTaxCode(), operator.getAvatarUrl()))
+                .collect(Collectors.toList());
     }
 
 

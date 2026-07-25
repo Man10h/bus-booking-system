@@ -1,5 +1,6 @@
 package com.Man10h.core_service.model.entities;
 
+import com.Man10h.core_service.model.enums.SeatType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,6 +18,9 @@ public class VehicleType {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Enumerated(EnumType.STRING)
+    private SeatType seatType;
+    
     private String code;
     private String name;
     private int floors;

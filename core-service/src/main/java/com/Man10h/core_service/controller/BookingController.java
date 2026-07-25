@@ -1,8 +1,10 @@
 package com.Man10h.core_service.controller;
 
+import com.Man10h.core_service.model.request.BookingFilter;
 import com.Man10h.core_service.model.request.CreateBookingRequest;
 import com.Man10h.core_service.model.response.ApiResponse;
 import com.Man10h.core_service.model.response.BookingDetailResponse;
+import com.Man10h.core_service.model.response.BookingPageResponse;
 import com.Man10h.core_service.model.response.BookingSummaryResponse;
 import com.Man10h.core_service.service.BookingService;
 import jakarta.validation.Valid;
@@ -43,10 +45,11 @@ public class BookingController {
 
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/bookings/me")
-    public ResponseEntity<ApiResponse<Page<BookingSummaryResponse>>> getUsersBookings(@AuthenticationPrincipal Jwt jwt,
-                                                                                      @RequestParam(name = "page", defaultValue = "0") int page,
-                                                                                      @RequestParam(name = "size", defaultValue = "10") int size) {
-        Page<BookingSummaryResponse> data = bookingService.getUserBookings(jwt.getSubject(), PageRequest.of(page, size));
+    public ResponseEntity<ApiResponse<BookingPageResponse>> getUsersBookings(@AuthenticationPrincipal Jwt jwt,
+                                                                             @ModelAttribute BookingFilter bookingFilter,
+                                                                             @RequestParam(name = "page", defaultValue = "0") int page,
+                                                                             @RequestParam(name = "size", defaultValue = "10") int size) {
+        BookingPageResponse data = bookingService.findUserBookingsByFilter(jwt.getSubject(), bookingFilter, PageRequest.of(page, size));
 
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
     }

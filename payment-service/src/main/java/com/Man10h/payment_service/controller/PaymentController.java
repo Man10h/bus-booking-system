@@ -1,5 +1,6 @@
 package com.Man10h.payment_service.controller;
 
+import com.Man10h.payment_service.model.enums.Provider;
 import com.Man10h.payment_service.model.request.CreateMerchantRequest;
 import com.Man10h.payment_service.model.request.CreatePaymentRequest;
 import com.Man10h.payment_service.model.request.UpdateMerchantRequest;
@@ -19,6 +20,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -36,6 +38,22 @@ public class PaymentController {
                                                                         @AuthenticationPrincipal Jwt jwt) {
 
         MerchantResponse data = merchantService.createMerchant(jwt.getSubject(), request);
+        return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
+    }
+
+    @PreAuthorize("hasRole('OPERATOR')")
+    @GetMapping("/merchants")
+    public ResponseEntity<ApiResponse<Page<MerchantResponse>>> getMerchants(@RequestParam(name = "page", defaultValue = "0") int page,
+                                                                            @RequestParam(name = "size", defaultValue = "5") int size,
+                                                                            @AuthenticationPrincipal Jwt jwt) {
+        Page<MerchantResponse> data = merchantService.getOperatorMerchant(jwt.getSubject(), PageRequest.of(page, size));
+        return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
+    }
+
+    @PreAuthorize("hasRole('OPERATOR')")
+    @GetMapping("/providers")
+    public ResponseEntity<ApiResponse<List<Provider>>> getAllProviders() {
+        List<Provider> data = List.of(Provider.VNPAY);
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
     }
 
@@ -79,6 +97,6 @@ public class PaymentController {
                                                                               @RequestParam(name = "page", defaultValue = "0") int page,
                                                                               @RequestParam(name = "size", defaultValue = "10") int size){
         Page<PaymentResponse> data = paymentService.getUserPayments(jwt.getSubject(), PageRequest.of(page, size));
-        return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
+        return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
     }
 }

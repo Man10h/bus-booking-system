@@ -17,10 +17,10 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 new ErrorResponse(
                         HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                        HttpStatus.BAD_REQUEST.value(),
+                        HttpStatus.BAD_REQUEST.value(), 
                         ex.getMessage(),
                         LocalDateTime.now()
                 )
@@ -29,7 +29,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(AuthenticationFailedException.class)
     public ResponseEntity<ErrorResponse> authenticationFailedException(AuthenticationFailedException ex) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 new ErrorResponse(
                         HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                         HttpStatus.UNAUTHORIZED.value(),
@@ -41,7 +41,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(GlobalException.class)
     public ResponseEntity<ErrorResponse> globalException(GlobalException ex) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 new ErrorResponse(
                         HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
                         HttpStatus.INTERNAL_SERVER_ERROR.value(),
@@ -53,7 +53,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(InvalidTokenException.class)
     public ResponseEntity<ErrorResponse> invalidTokenException(InvalidTokenException ex) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 new ErrorResponse(
                         HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                         HttpStatus.UNAUTHORIZED.value(),
@@ -65,7 +65,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(InvalidClientIdException.class)
     public ResponseEntity<ErrorResponse> invalidClientException(InvalidClientIdException ex) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 new ErrorResponse(
                         HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                         HttpStatus.UNAUTHORIZED.value(),
@@ -77,7 +77,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(InvalidSecretException.class)
     public ResponseEntity<ErrorResponse> invalidSecretException(InvalidSecretException ex) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 new ErrorResponse(
                         HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                         HttpStatus.UNAUTHORIZED.value(),
@@ -89,7 +89,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(ServiceClientNotFoundException.class)
     public ResponseEntity<ErrorResponse> serviceClientNotFoundException(ServiceClientNotFoundException ex) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 new ErrorResponse(
                         HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                         HttpStatus.UNAUTHORIZED.value(),
@@ -101,7 +101,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(InvalidScopeException.class)
     public ResponseEntity<ErrorResponse> invalidScopeException(InvalidScopeException ex) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 new ErrorResponse(
                         HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                         HttpStatus.UNAUTHORIZED.value(),
@@ -113,7 +113,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(ClientIdAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> clientIdAlreadyExistsException(ClientIdAlreadyExistsException ex) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
                 new ErrorResponse(
                         HttpStatus.CONFLICT.getReasonPhrase(),
                         HttpStatus.CONFLICT.value(),
@@ -125,7 +125,7 @@ public class ExceptionHandlers {
 
     @ExceptionHandler(RefreshTokenNotFoundException.class)
     public ResponseEntity<ErrorResponse> refreshTokenNotFoundException(RefreshTokenNotFoundException ex) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 new ErrorResponse(
                         HttpStatus.NOT_FOUND.getReasonPhrase(),
                         HttpStatus.NOT_FOUND.value(),
