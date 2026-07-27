@@ -30,6 +30,7 @@ interface OperatorState {
 
   // Actions
   fetchProfile: () => Promise<OperatorResponse | null>;
+  createProfile: (data: { companyName: string; taxCode: string; contactPhone: string }) => Promise<void>;
   updateProfile: (data: { companyName: string; taxCode: string; contactPhone: string }) => Promise<void>;
   fetchProviders: () => Promise<void>;
   fetchMerchants: (page: number, size: number) => Promise<void>;
@@ -85,6 +86,17 @@ export const useOperatorStore = create<OperatorState>((set, get) => ({
     } catch (err: any) {
       set({ error: err.message || 'Lỗi tải hồ sơ nhà xe', isLoading: false });
       return null;
+    }
+  },
+
+  createProfile: async (data) => {
+    try {
+      set({ isLoading: true, error: null });
+      const created = await operatorService.createProfile(data);
+      set({ profile: created, isLoading: false });
+    } catch (err: any) {
+      set({ error: err.message || 'Lỗi tạo hồ sơ nhà xe', isLoading: false });
+      throw err;
     }
   },
 

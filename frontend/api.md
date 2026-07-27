@@ -250,7 +250,25 @@ Mọi kết quả trả về từ API đều được bọc trong một định 
     "password": "Password123"
   }
   ```
-- **Response Body**: Trả về `UserResponse` chứa thông tin user nếu đúng mật khẩu, ngược lại trả lỗi.
+- **Response Body**:
+  ```json
+  {
+    "code": 200,
+    "message": "success",
+    "data": {
+      "id": "usr_92f8c5b1",
+      "email": "customer@gmail.com",
+      "phone": "0987654321",
+      "fullName": "Nguyen Van A",
+      "address": "123 Đường Lê Lợi, TP. HCM",
+      "gender": "MALE",
+      "avatarUrl": "https://example.com/avatar.png",
+      "enabled": true,
+      "createdAt": "2026-07-20T10:30:00",
+      "role": "USER"
+    }
+  }
+  ```
 
 #### Lấy thông tin cá nhân hiện tại (Get My Profile)
 - **Method**: `GET`
@@ -762,7 +780,38 @@ Mọi kết quả trả về từ API đều được bọc trong một định 
 - **Method**: `GET`
 - **Path**: `/core/vehicles/{vehicleId}`
 - **Xác thực**: Yêu cầu Token (Quyền `OPERATOR`)
-- **Response Body**: Trả về `VehicleResponse` chứa thông tin biển số, hãng xe, loại xe và thông tin nhà xe chủ quản.
+- **Response Body**:
+  ```json
+  {
+    "code": 200,
+    "message": "success",
+    "data": {
+      "id": 1,
+      "licensePlate": "51B-123.45",
+      "brand": "Thaco",
+      "model": "Mobihome 2024",
+      "totalSeats": 40,
+      "description": "Xe giường nằm cao cấp 40 chỗ có wifi, nước uống miễn phí.",
+      "status": "ACTIVE",
+      "vehicleType": {
+        "id": 1,
+        "seatType": "BED",
+        "code": "SLEEPER_2F",
+        "name": "Xe giường nằm 2 tầng",
+        "floors": 2,
+        "rows": 6,
+        "cols": 3
+      },
+      "operatorResponse": {
+        "id": "op_9837a28f",
+        "companyName": "Phương Trang FUTA Bus Lines",
+        "taxCode": "0301234567",
+        "contactPhone": "19006067",
+        "avatarUrl": "https://futa.vn/logo.png"
+      }
+    }
+  }
+  ```
 
 #### Xem danh sách Xe của nhà xe hiện tại (Get My Vehicles)
 - **Method**: `GET`
@@ -839,6 +888,7 @@ Mọi kết quả trả về từ API đều được bọc trong một định 
     "data": [
       {
         "id": 1,
+        "seatType": "BED",
         "code": "SLEEPER_2F",
         "name": "Xe giường nằm 2 tầng",
         "floors": 2,
@@ -856,6 +906,7 @@ Mọi kết quả trả về từ API đều được bọc trong một định 
 - **Request Body**:
   ```json
   {
+    "seatType": "SEAT",
     "code": "LIMOUSINE_9S",
     "name": "Xe Limousine 9 chỗ VIP",
     "floors": 1,

@@ -8,7 +8,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "schedule_seat")
+@Table(name = "schedule_seat",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"schedule_id", "seat_id"})
+})
 @Getter
 @Setter
 @Builder
@@ -18,13 +21,21 @@ public class ScheduleSeat {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "price")
     private BigDecimal price;
 
+    @Column(name = "status")
     @Enumerated(EnumType.STRING)
     private ScheduleSeatStatus status;
 
+    @Column(name = "held_by")
     private String heldBy;
+
+    @Column(name = "held_at")
     private LocalDateTime heldAt;
+
+    @Column(name = "expired_at")
     private LocalDateTime expiredAt;
 
     @ManyToOne(fetch = FetchType.LAZY)

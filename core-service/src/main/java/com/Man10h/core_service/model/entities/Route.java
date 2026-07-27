@@ -21,10 +21,16 @@ public class Route {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "route_code", nullable = false, unique = true)
     private String routeCode;
+
+    @Column(name = "distance")
     private BigDecimal distance;
+
+    @Column(name = "estimated_duration_minutes")
     private Long estimatedDurationMinutes;
 
+    @Column(name = "status")
     @Enumerated(EnumType.STRING)
     private RouteStatus status;
 

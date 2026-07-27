@@ -21,6 +21,15 @@ export const operatorService = {
     return res.data.data;
   },
 
+  createProfile: async (data: {
+    companyName: string;
+    taxCode: string;
+    contactPhone: string;
+  }): Promise<OperatorResponse> => {
+    const res = await apiClient.post<ApiResponse<OperatorResponse>>('/core/operators', data);
+    return res.data.data;
+  },
+
   updateProfile: async (data: {
     companyName: string;
     taxCode: string;

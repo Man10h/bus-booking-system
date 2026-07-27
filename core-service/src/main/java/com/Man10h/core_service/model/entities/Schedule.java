@@ -21,12 +21,25 @@ public class Schedule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "departure_time")
     private LocalDateTime departureTime;
+
+    @Column(name = "arrival_time")
     private LocalDateTime arrivalTime;
+
+    @Column(name = "base_price")
     private BigDecimal basePrice;
+
+    @Column(name = "vip_price")
     private BigDecimal vipPrice;
+
+    @Column(name = "available_seats")
     private Long availableSeats;
+
+    @Column(name = "total_seats")
     private Long totalSeats;
+
+    @Column(name = "operator_id", nullable = false)
     private String operatorId;
 
     @Enumerated(EnumType.STRING)

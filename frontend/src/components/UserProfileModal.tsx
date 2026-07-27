@@ -236,23 +236,25 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Địa chỉ</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Địa chỉ *</label>
                 <input
                   type="text"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-baolau-yellow focus:bg-white transition"
+                  required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Đường dẫn ảnh đại diện (Avatar URL)</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Đường dẫn ảnh đại diện (Avatar URL) *</label>
                 <input
                   type="url"
                   value={avatarUrl}
                   onChange={(e) => setAvatarUrl(e.target.value)}
                   placeholder="https://example.com/avatar.jpg"
                   className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-baolau-yellow focus:bg-white transition"
+                  required
                 />
               </div>
 

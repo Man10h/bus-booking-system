@@ -13,6 +13,9 @@ spring:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
       port: ${SPRING_DATA_REDIS_PORT:6379}
 
+  liquibase:
+    change-log: classpath:/db/changelog/appchange-log.xml
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/core}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
@@ -21,7 +24,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:

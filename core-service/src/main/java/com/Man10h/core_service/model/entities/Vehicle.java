@@ -19,13 +19,22 @@ public class Vehicle {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "license_plate")
     private String licensePlate;
+
+    @Column(name = "brand")
     private String brand;
+
+    @Column(name = "model")
     private String model;
+
+    @Column(name = "total_seats")
     private Long totalSeats;
+
+    @Column(name = "description")
     private String description;
 
-
+    @Column(name = "status")
     @Enumerated(EnumType.STRING)
     private VehicleStatus status;
 

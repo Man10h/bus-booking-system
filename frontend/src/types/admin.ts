@@ -25,6 +25,7 @@ export interface ServiceClientRequest {
 
 export interface VehicleTypeResponse {
   id: number;
+  seatType: string;
   code: string;
   name: string;
   floors: number;
@@ -33,6 +34,7 @@ export interface VehicleTypeResponse {
 }
 
 export interface VehicleTypeRequest {
+  seatType: string;
   code: string;
   name: string;
   floors: number;

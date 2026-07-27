@@ -52,10 +52,18 @@ public class RouteController {
     }
 
     @PreAuthorize("hasRole('OPERATOR')")
-    @PatchMapping("/routes/{routeId}/status")
+    @PatchMapping("/routes/{routeId}/inactive")
     public ResponseEntity<ApiResponse<?>> deactivateRoute(@PathVariable Long routeId,
                                                           @AuthenticationPrincipal Jwt jwt) {
         routeService.deactivateRoute(jwt.getSubject(), routeId);
+        return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
+    }
+
+    @PreAuthorize("hasRole('OPERATOR')")
+    @PatchMapping("/routes/{routeId}/active")
+    public ResponseEntity<ApiResponse<?>> activeRoute(@PathVariable Long routeId,
+                                                          @AuthenticationPrincipal Jwt jwt) {
+        routeService.activeRoute(jwt.getSubject(), routeId);
         return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
     }
 }

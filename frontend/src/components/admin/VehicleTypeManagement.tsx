@@ -18,6 +18,7 @@ export const VehicleTypeManagement: React.FC = () => {
   const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
 
   // Form fields
+  const [seatType, setSeatType] = useState('SEAT');
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [floors, setFloors] = useState(1);
@@ -31,6 +32,7 @@ export const VehicleTypeManagement: React.FC = () => {
 
   const openCreateModal = () => {
     setModalMode('create');
+    setSeatType('SEAT');
     setCode('');
     setName('');
     setFloors(1);
@@ -43,6 +45,7 @@ export const VehicleTypeManagement: React.FC = () => {
   const openEditModal = (type: any) => {
     setModalMode('edit');
     setSelectedTypeId(type.id);
+    setSeatType(type.seatType || 'SEAT');
     setCode(type.code);
     setName(type.name);
     setFloors(type.floors);
@@ -72,6 +75,7 @@ export const VehicleTypeManagement: React.FC = () => {
     }
 
     const payload = {
+      seatType,
       code: code.trim(),
       name: name.trim(),
       floors,
@@ -135,6 +139,7 @@ export const VehicleTypeManagement: React.FC = () => {
               <tr className="border-b border-gray-100 bg-gray-50 text-gray-500 font-bold uppercase tracking-wider">
                 <th className="py-3 px-4">Mã loại xe</th>
                 <th className="py-3 px-4">Tên loại xe</th>
+                <th className="py-3 px-4 text-center">Loại chỗ</th>
                 <th className="py-3 px-4 text-center">Số tầng</th>
                 <th className="py-3 px-4 text-center">Bố cục (Hàng x Cột)</th>
                 <th className="py-3 px-4 text-center">Tổng số ghế thiết kế</th>
@@ -144,7 +149,7 @@ export const VehicleTypeManagement: React.FC = () => {
             <tbody className="divide-y divide-gray-100">
               {vehicleTypes.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-400">
+                  <td colSpan={7} className="py-8 text-center text-gray-400">
                     Không có loại xe nào.
                   </td>
                 </tr>
@@ -153,6 +158,13 @@ export const VehicleTypeManagement: React.FC = () => {
                   <tr key={type.id} className="hover:bg-gray-50/50 transition">
                     <td className="py-3 px-4 font-mono font-semibold text-gray-900">{type.code}</td>
                     <td className="py-3 px-4 text-gray-500">{type.name}</td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        type.seatType === 'BED' ? 'bg-purple-50 text-purple-600 border border-purple-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
+                      }`}>
+                        {type.seatType === 'BED' ? 'Giường nằm' : 'Ghế ngồi'}
+                      </span>
+                    </td>
                     <td className="py-3 px-4 text-center text-gray-900 font-medium">{type.floors}</td>
                     <td className="py-3 px-4 text-center text-gray-500">
                       {type.rows} x {type.cols}
@@ -231,6 +243,19 @@ export const VehicleTypeManagement: React.FC = () => {
                   placeholder="e.g. Xe giường nằm 2 tầng"
                   required
                 />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Loại chỗ (Seat Type)</label>
+                <select
+                  value={seatType}
+                  onChange={(e) => setSeatType(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-xs focus:outline-none focus:border-baolau-yellow"
+                  required
+                >
+                  <option value="SEAT">Ghế ngồi (SEAT)</option>
+                  <option value="BED">Giường nằm (BED)</option>
+                </select>
               </div>
 
               <div className="grid grid-cols-3 gap-2">

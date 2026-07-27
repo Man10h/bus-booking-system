@@ -119,6 +119,7 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Transactional
+    @CacheEvict(value = "routes", allEntries = true)
     public RouteDetailResponse createRoute(String userId, CreateRouteRequest request) {
         if(routeRepository.existsByRouteCode(request.routeCode())){
             throw new RouteCodeAlreadyExistsException("Route code already exists");
@@ -169,6 +170,7 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Transactional
+    @CacheEvict(value = "routes", allEntries = true)
     public RouteDetailResponse updateRoute(Long id, String userId, UpdateRouteRequest request) {
         Optional<Route> optional = routeRepository.getDetailById(id);
         if(optional.isEmpty()){
@@ -213,6 +215,7 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Transactional
+    @CacheEvict(value = "routes", allEntries = true)
     public void deactivateRoute(String userId, Long id) {
         Optional<Route> optional = routeRepository.getDetailById(id);
         if(optional.isEmpty()){
@@ -227,6 +230,21 @@ public class RouteServiceImpl implements RouteService {
         Route route = optional.get();
         route.setStatus(RouteStatus.INACTIVE);
 
+        routeRepository.save(route);
+    }
+
+    @Transactional
+    @CacheEvict(value = "routes", allEntries = true)
+    public void activeRoute(String userId, Long id) {
+        Optional<Route> optional = routeRepository.getDetailById(id);
+        if(optional.isEmpty()){
+            throw new RouteNotFoundException("Route not found");
+        }
+        if(!optional.get().getOperator().getUserId().equals(userId)){
+            throw new AccessDeniedException("You don't own this route");
+        }
+        Route route = optional.get();
+        route.setStatus(RouteStatus.ACTIVE);
         routeRepository.save(route);
     }
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Mail, Lock, Phone, MapPin, X, AlertCircle, Loader, CheckSquare, Square } from 'lucide-react';
+import { User, Mail, Lock, Phone, X, AlertCircle, Loader, CheckSquare, Square } from 'lucide-react';
 import { authService } from '../services/authService';
 
 interface RegisterModalProps {
@@ -21,8 +21,6 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [rePassword, setRePassword] = useState('');
-  const [address, setAddress] = useState('');
-  const [gender, setGender] = useState('MALE');
 
   // Checkboxes
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -60,9 +58,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
         password,
         rePassword,
         phone,
-        fullName,
-        address,
-        gender
+        fullName
       });
       onSuccess(email);
     } catch (err: any) {
@@ -135,51 +131,20 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                 </div>
               </div>
 
-              {/* Gender & Address */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Giới tính</label>
-                  <select
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-baolau-yellow focus:bg-white transition"
-                  >
-                    <option value="MALE">Nam</option>
-                    <option value="FEMALE">Nữ</option>
-                    <option value="OTHER">Khác</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Số điện thoại *</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                      <Phone size={14} />
-                    </div>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="09xxxxxxxx"
-                      className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 pl-9 text-sm focus:outline-none focus:border-baolau-yellow focus:bg-white transition"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Address */}
+              {/* Phone */}
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Địa chỉ</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Số điện thoại *</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                    <MapPin size={16} />
+                    <Phone size={14} />
                   </div>
                   <input
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Quận 1, TP. Hồ Chí Minh"
-                    className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 pl-10 text-sm focus:outline-none focus:border-baolau-yellow focus:bg-white transition"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="09xxxxxxxx"
+                    className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 pl-9 text-sm focus:outline-none focus:border-baolau-yellow focus:bg-white transition"
+                    required
                   />
                 </div>
               </div>

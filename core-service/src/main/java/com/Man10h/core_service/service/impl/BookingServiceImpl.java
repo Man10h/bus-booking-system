@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -111,6 +112,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Transactional
+    @CacheEvict(value = "bookings", allEntries = true)
     public BookingSummaryResponse createBooking(String userId, CreateBookingRequest request) {
         Optional<Schedule> optionalSchedule = scheduleRepository.findById(request.scheduleId());
         if(optionalSchedule.isEmpty()){
@@ -183,6 +185,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Transactional
+    @CacheEvict(value = "bookings", allEntries = true)
     public void cancelBooking(String userId, Long bookingId) {
         Booking booking = bookingRepository.getBookingDetailByIdAndUserId(bookingId, userId)
                 .orElseThrow(() -> new BookingNotFoundException("Booking not found"));

@@ -18,12 +18,32 @@ import { Link } from 'react-router-dom';
 type TabType = 'profile' | 'routes' | 'vehicles' | 'schedules';
 
 export const OperatorLayout: React.FC = () => {
-  const { fetchProfile, profile, isLoading, error } = useOperatorStore();
+  const { fetchProfile, createProfile, profile, isLoading } = useOperatorStore();
   const [activeTab, setActiveTab] = useState<TabType>('profile');
+
+  // Registration Form States
+  const [companyName, setCompanyName] = useState('');
+  const [taxCode, setTaxCode] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [registerError, setRegisterError] = useState<string | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  const handleRegisterProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegisterError(null);
+    setIsRegistering(true);
+    try {
+      await createProfile({ companyName, taxCode, contactPhone });
+    } catch (err: any) {
+      setRegisterError(err.message || 'Đăng ký thông tin nhà xe thất bại. Vui lòng kiểm tra lại.');
+    } finally {
+      setIsRegistering(false);
+    }
+  };
 
   if (isLoading && !profile) {
     return (
@@ -36,19 +56,83 @@ export const OperatorLayout: React.FC = () => {
     );
   }
 
-  if (error && !profile) {
+  if (!profile) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-16 px-4">
-        <div className="max-w-md w-full bg-white p-6 rounded-lg border border-red-200 text-center space-y-4 shadow-sm">
-          <ShieldAlert className="text-red-500 mx-auto" size={48} />
-          <h2 className="font-oswald text-xl font-bold uppercase text-gray-800">Không tìm thấy thông tin nhà xe</h2>
-          <p className="text-sm text-gray-600">
-            Tài khoản của bạn đã được cấp quyền Operator nhưng chưa liên kết với thông tin nhà xe nào trên hệ thống. 
-            Vui lòng liên hệ Admin để hoàn tất cấu hình.
-          </p>
-          <Link to="/" className="inline-block bg-baolau-dark hover:bg-baolau-dark/95 text-white font-bold text-xs uppercase tracking-wider px-6 py-2.5 rounded shadow">
-            Quay lại trang chủ
-          </Link>
+      <div className="min-h-screen bg-[#f7f7f7] flex items-center justify-center pt-16 px-4">
+        <div className="max-w-md w-full bg-white border-t-4 border-baolau-yellow border-x border-b border-gray-200 shadow-lg p-6 space-y-6">
+          <div className="text-center space-y-2 pb-4 border-b border-gray-100">
+            <Building2 className="text-baolau-yellow mx-auto" size={48} />
+            <h2 className="font-oswald text-xl font-bold uppercase tracking-wider text-gray-800">
+              Đăng ký hồ sơ nhà xe
+            </h2>
+            <p className="text-xs text-gray-500 font-sans">
+              Tài khoản của bạn đã được cấp quyền Nhà xe. Vui lòng hoàn tất thông tin thương hiệu để bắt đầu quản trị.
+            </p>
+          </div>
+
+          <form onSubmit={handleRegisterProfile} className="space-y-4 font-sans">
+            {registerError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded flex items-center space-x-2">
+                <ShieldAlert size={16} className="shrink-0 text-red-500" />
+                <span>{registerError}</span>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider font-semibold">Tên công ty / Nhà xe *</label>
+              <input
+                type="text"
+                required
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-xs focus:outline-none focus:border-baolau-yellow focus:bg-white transition"
+                placeholder="Ví dụ: Hoàng Long Limousine"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider font-semibold">Mã số thuế *</label>
+              <input
+                type="text"
+                required
+                value={taxCode}
+                onChange={(e) => setTaxCode(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-xs focus:outline-none focus:border-baolau-yellow focus:bg-white transition"
+                placeholder="Nhập mã số thuế doanh nghiệp"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider font-semibold">Số điện thoại liên hệ *</label>
+              <input
+                type="text"
+                required
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-xs focus:outline-none focus:border-baolau-yellow focus:bg-white transition"
+                placeholder="Hotline hỗ trợ khách hàng"
+              />
+            </div>
+
+            <div className="pt-2 flex items-center space-x-3">
+              <Link
+                to="/"
+                className="flex-1 text-center py-2.5 border border-gray-200 text-gray-500 font-bold rounded text-xs hover:bg-gray-50 transition uppercase tracking-wider"
+              >
+                Trang chủ
+              </Link>
+              <button
+                type="submit"
+                disabled={isRegistering}
+                className="flex-grow bg-baolau-yellow hover:bg-baolau-yellow/90 text-baolau-dark font-bold text-xs uppercase tracking-wider py-2.5 rounded shadow transition flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                {isRegistering ? (
+                  <Loader2 className="animate-spin" size={14} />
+                ) : null}
+                <span>ĐĂNG KÝ HỒ SƠ</span>
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     );

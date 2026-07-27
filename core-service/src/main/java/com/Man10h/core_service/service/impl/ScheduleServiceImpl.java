@@ -121,6 +121,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Transactional
+    @CacheEvict(value = "schedules", allEntries = true)
     public ScheduleSummaryResponse createSchedule(String userId, CreateScheduleRequest request) {
         if (!request.departureTime().isBefore(request.arrivalTime())) {
             throw new IllegalArgumentException("Departure time must be before arrival time");
@@ -244,6 +245,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Transactional
+    @CacheEvict(value = "schedules", allEntries = true)
     public void cancelSchedule(String userId, Long id) {
         Schedule schedule = scheduleRepository.findById(id).orElseThrow(() -> new ScheduleNotFoundException("Schedule not found"));
         Operator operator = operatorRepository.findByUserId(userId).orElseThrow(() -> new OperatorNotFoundException("Operator not found"));
@@ -263,6 +265,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Transactional
+    @CacheEvict(value = "schedules", allEntries = true)
     public void updateSchedule(Long id, String userId, UpdateScheduleRequest request) {
         if (!request.departureTime().isBefore(request.arrivalTime())) {
             throw new IllegalArgumentException("Departure time must be before arrival time");

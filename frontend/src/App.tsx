@@ -180,7 +180,7 @@ function App() {
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                     
                     {/* Origin City Dropdown */}
-                    <div className="md:col-span-4 space-y-1">
+                    <div className={`${activeTab === 'schedules' ? 'md:col-span-4' : 'md:col-span-5'} space-y-1`}>
                       <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Từ</label>
                       <div className="relative">
                         <MapPin className="absolute left-3 top-3 text-gray-400 z-10" size={18} />
@@ -202,9 +202,9 @@ function App() {
                         </select>
                       </div>
                     </div>
-
+ 
                     {/* Swap Button Icon */}
-                    <div className="hidden md:flex md:col-span-1 justify-center pt-5">
+                    <div className={`hidden md:flex ${activeTab === 'schedules' ? 'md:col-span-1' : 'md:col-span-2'} justify-center pt-5`}>
                       <button 
                         onClick={handleSwapCities}
                         className="bg-gray-100 hover:bg-gray-200 text-gray-600 p-2 rounded-full border border-gray-200 transition focus:outline-none shadow-sm"
@@ -213,9 +213,9 @@ function App() {
                         <ArrowRightLeft size={16} />
                       </button>
                     </div>
-
+ 
                     {/* Destination City Dropdown */}
-                    <div className="md:col-span-4 space-y-1">
+                    <div className={`${activeTab === 'schedules' ? 'md:col-span-4' : 'md:col-span-5'} space-y-1`}>
                       <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Đến</label>
                       <div className="relative">
                         <MapPin className="absolute left-3 top-3 text-gray-400 z-10" size={18} />
@@ -237,23 +237,24 @@ function App() {
                         </select>
                       </div>
                     </div>
-
+ 
                     {/* Datepicker */}
-                    <div className="md:col-span-3 space-y-1">
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
-                        {activeTab === 'schedules' ? 'Ngày khởi hành' : 'Thời gian (Bỏ qua)'}
-                      </label>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-3 text-gray-400" size={18} />
-                        <input
-                          type="date"
-                          disabled={activeTab === 'routes'}
-                          value={departureDate}
-                          onChange={(e) => setDepartureDate(e.target.value)}
-                          className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2.5 pl-10 text-sm focus:outline-none focus:border-baolau-yellow transition disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
+                    {activeTab === 'schedules' && (
+                      <div className="md:col-span-3 space-y-1">
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          Ngày khởi hành
+                        </label>
+                        <div className="relative">
+                          <Calendar className="absolute left-3 top-3 text-gray-400" size={18} />
+                          <input
+                            type="date"
+                            value={departureDate}
+                            onChange={(e) => setDepartureDate(e.target.value)}
+                            className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2.5 pl-10 text-sm focus:outline-none focus:border-baolau-yellow transition"
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* Search Submit Button */}

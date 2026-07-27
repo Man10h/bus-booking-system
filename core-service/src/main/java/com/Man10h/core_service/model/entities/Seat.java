@@ -20,15 +20,28 @@ public class Seat {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "seat_number")
     private String seatNumber;
+
+    @Column(name = "floor")
     private Long floor;
+
+    @Column(name = "row")
     private Long row;
+
+    @Column(name = "col")
     private Long col;
+
+    @Column(name = "is_vip")
     private Boolean isVip;
 
+
+    @Column(name = "seat_type")
     @Enumerated(EnumType.STRING)
     private SeatType seatType;
 
+
+    @Column(name = "status")
     @Enumerated(EnumType.STRING)
     private SeatStatus status;
 

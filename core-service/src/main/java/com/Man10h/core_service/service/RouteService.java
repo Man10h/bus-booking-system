@@ -15,4 +15,5 @@ public interface RouteService {
     public RouteDetailResponse createRoute(String userId, CreateRouteRequest request);
     public RouteDetailResponse updateRoute(Long id, String userid, UpdateRouteRequest request);
     public void deactivateRoute(String userId, Long id);
+    public void activeRoute(String userId, Long id);
 }
