@@ -4,7 +4,11 @@ import type {
   OperatorResponse, 
   MerchantResponse, 
   VehicleResponse, 
-  VehicleTypeResponse
+  VehicleTypeResponse,
+  StatisticOverviewResponse,
+  RevenueChartData,
+  TopRouteResponse,
+  TopVehicleResponse
 } from '../types/operator';
 import type { 
   RouteDetailResponse, 
@@ -145,7 +149,11 @@ export const operatorService = {
   },
 
   deactivateRoute: async (routeId: number): Promise<void> => {
-    await apiClient.patch<ApiResponse<null>>(`/core/routes/${routeId}/status`);
+    await apiClient.patch<ApiResponse<null>>(`/core/routes/${routeId}/inactive`);
+  },
+
+  activateRoute: async (routeId: number): Promise<void> => {
+    await apiClient.patch<ApiResponse<null>>(`/core/routes/${routeId}/active`);
   },
 
   // 3. Vehicles & Seats Management
@@ -256,5 +264,30 @@ export const operatorService = {
 
   cancelSchedule: async (scheduleId: number): Promise<void> => {
     await apiClient.patch<ApiResponse<null>>(`/core/schedules/${scheduleId}/cancel`);
+  },
+
+  // 5. Statistics API
+  getStatisticOverview: async (): Promise<StatisticOverviewResponse> => {
+    const res = await apiClient.get<ApiResponse<StatisticOverviewResponse>>('/core/statistic/overview');
+    return res.data.data;
+  },
+
+  getRevenueChart: async (params: {
+    from: string;
+    to: string;
+    statisticType: 'DAY' | 'MONTH';
+  }): Promise<RevenueChartData[]> => {
+    const res = await apiClient.get<ApiResponse<RevenueChartData[]>>('/core/statistic/revenue', { params });
+    return res.data.data;
+  },
+
+  getTopRoutes: async (): Promise<TopRouteResponse[]> => {
+    const res = await apiClient.get<ApiResponse<TopRouteResponse[]>>('/core/statistic/routes/top');
+    return res.data.data;
+  },
+
+  getTopVehicles: async (): Promise<TopVehicleResponse[]> => {
+    const res = await apiClient.get<ApiResponse<TopVehicleResponse[]>>('/core/statistic/vehicles/top');
+    return res.data.data;
   }
 };

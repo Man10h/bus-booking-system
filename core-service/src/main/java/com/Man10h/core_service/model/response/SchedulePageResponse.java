@@ -12,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 public class SchedulePageResponse implements Serializable {
 
-    private List<ScheduleSummaryResponse> content;
+    private List<ScheduleDetailResponse> content;
 
     private long totalElements;
 

@@ -37,6 +37,12 @@ export const authService = {
     return res.data.data;
   },
 
+  resendOtp: async (email: string): Promise<void> => {
+    await apiClient.get<ApiResponse<null>>('/users/resend', {
+      params: { email },
+    });
+  },
+
   changePassword: async (request: any): Promise<void> => {
     await apiClient.post<ApiResponse<null>>('/users/change-password', request);
   },

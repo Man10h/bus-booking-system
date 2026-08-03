@@ -4,6 +4,7 @@ import { OperatorProfile } from './OperatorProfile';
 import { OperatorRoutes } from './OperatorRoutes';
 import { OperatorVehicles } from './OperatorVehicles';
 import { OperatorSchedules } from './OperatorSchedules';
+import { OperatorStatistics } from './OperatorStatistics';
 import { 
   Building2, 
   MapPin, 
@@ -11,11 +12,12 @@ import {
   Calendar, 
   ShieldAlert, 
   Loader2, 
-  LogOut 
+  LogOut,
+  BarChart3
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-type TabType = 'profile' | 'routes' | 'vehicles' | 'schedules';
+type TabType = 'profile' | 'routes' | 'vehicles' | 'schedules' | 'statistics';
 
 export const OperatorLayout: React.FC = () => {
   const { fetchProfile, createProfile, profile, isLoading } = useOperatorStore();
@@ -196,6 +198,18 @@ export const OperatorLayout: React.FC = () => {
               <Calendar size={16} />
               <span>Quản lý lịch trình</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('statistics')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition ${
+                activeTab === 'statistics'
+                  ? 'bg-baolau-yellow text-baolau-dark'
+                  : 'text-gray-300 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <BarChart3 size={16} />
+              <span>Báo cáo & Thống kê</span>
+            </button>
           </nav>
         </div>
 
@@ -217,6 +231,7 @@ export const OperatorLayout: React.FC = () => {
           {activeTab === 'routes' && <OperatorRoutes />}
           {activeTab === 'vehicles' && <OperatorVehicles />}
           {activeTab === 'schedules' && <OperatorSchedules />}
+          {activeTab === 'statistics' && <OperatorStatistics />}
         </div>
       </main>
     </div>

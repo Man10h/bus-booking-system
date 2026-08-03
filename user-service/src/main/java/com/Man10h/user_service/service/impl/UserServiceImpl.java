@@ -88,7 +88,7 @@ public class UserServiceImpl implements UserService {
                 .fullName(request.fullName())
                 .role(role)
                 .password(passwordEncoder.encode(request.password()))
-                .enabled(true)
+                .enabled(false)
                 .phone(request.phone())
                 .verificationCode(verificationCode)
                 .verificationExpiryDate(LocalDateTime.now().plusMinutes(10))
@@ -138,6 +138,41 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
 
         return true;
+    }
+
+    @Transactional
+    public void resendVerificationCode(String email) {
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if(optionalUser.isEmpty()){
+            throw new UserNotFoundException("User not found");
+        }
+        User user = optionalUser.get();
+        if(user.isEnabled()){
+            throw new AccountEnabledException("Account already enabled");
+        }
+        String verificationCode = generateVerificationCode();
+        user.setVerificationCode(verificationCode);
+        user.setVerificationExpiryDate(LocalDateTime.now().plusMinutes(15));
+        userRepository.save(user);
+
+        //send email verification code
+        UserVerificationResponse userVerificationResponse = new UserVerificationResponse(
+                user.getEmail(),
+                user.getEnabled(),
+                user.getCreatedAt(),
+                user.getVerificationCode(),
+                user.getVerificationExpiryDate()
+        );
+        try {
+            kafkaTemplate.send(topicUserRegisterSuccess, user.getId(), om.writeValueAsString(userVerificationResponse))
+                    .whenComplete((res, ex) -> {
+                        if(ex == null){
+                            throw new GlobalException("Can not send the message");
+                        }
+                    });
+        } catch (JsonProcessingException e) {
+            throw new GlobalException(e.getMessage());
+        }
     }
 
     @Override

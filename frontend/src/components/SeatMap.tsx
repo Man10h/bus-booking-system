@@ -202,87 +202,89 @@ export const SeatMap: React.FC<SeatMapProps> = ({ scheduleId }) => {
             phía trước đầu xe
           </div>
 
-          <div className="mt-14 inline-block bg-white p-6 rounded-2xl border border-gray-200/80 shadow-md">
-            <div className="space-y-4">
-              {gridRows.map(rowNum => (
-                <div key={rowNum} className="flex space-x-4 justify-center">
-                  {gridCols.map(colNum => {
-                    const seat = floorSeats.find(s => s.seatResponse.row === rowNum && s.seatResponse.col === colNum);
-                    
-                    if (!seat) {
-                      // Aisle (empty space)
-                      return (
-                        <div 
-                          key={`empty-${rowNum}-${colNum}`} 
-                          className="w-12 h-12 flex items-center justify-center text-[10px] text-gray-300"
-                        />
-                      );
-                    }
-
-                    const isSelected = selectedSeats.some(s => s.id === seat.id);
-                    const isBooked = seat.status === 'BOOKED';
-                    const isHeld = seat.status === 'HELD';
-                    const isVip = seat.seatResponse.isVip;
-
-                    let buttonClass = 'relative w-12 h-12 rounded-lg flex flex-col items-center justify-center font-bold text-xs transition border ';
-                    let statusLabel = 'Trống';
-
-                    if (isBooked) {
-                      buttonClass += 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed';
-                      statusLabel = 'Đã bán';
-                    } else if (isHeld) {
-                      buttonClass += 'bg-amber-100 text-amber-500 border-amber-200 cursor-not-allowed';
-                      statusLabel = 'Đang giữ';
-                    } else if (isSelected) {
-                      buttonClass += 'bg-baolau-yellow text-baolau-dark border-baolau-yellow shadow-md hover:bg-baolau-yellow/90';
-                      statusLabel = 'Đang chọn';
-                    } else {
-                      // Available
-                      if (isVip) {
-                        buttonClass += 'bg-amber-50/50 text-amber-700 border-amber-300 hover:border-baolau-yellow hover:bg-amber-100/50';
-                        statusLabel = 'Trống (VIP)';
-                      } else {
-                        buttonClass += 'bg-white text-gray-700 border-gray-300 hover:border-baolau-cyan hover:bg-gray-50';
+          <div className="mt-14 w-full overflow-auto max-h-[500px] flex justify-center p-1">
+            <div className="inline-block bg-white p-6 rounded-2xl border border-gray-200/80 shadow-md min-w-max">
+              <div className="space-y-4">
+                {gridRows.map(rowNum => (
+                  <div key={rowNum} className="flex space-x-4 justify-center">
+                    {gridCols.map(colNum => {
+                      const seat = floorSeats.find(s => s.seatResponse.row === rowNum && s.seatResponse.col === colNum);
+                      
+                      if (!seat) {
+                        // Aisle (empty space)
+                        return (
+                          <div 
+                            key={`empty-${rowNum}-${colNum}`} 
+                            className="w-12 h-12 flex items-center justify-center text-[10px] text-gray-300"
+                          />
+                        );
                       }
-                    }
 
-                    return (
-                      <div key={seat.id} className="relative group">
-                        <button
-                          disabled={isBooked || isHeld}
-                          onClick={() => toggleSeatSelection(seat)}
-                          className={buttonClass}
-                        >
-                          {/* VIP Badge icon */}
-                          {isVip && !isBooked && !isHeld && (
-                            <Sparkles className="absolute top-1 right-1 text-amber-500" size={10} />
-                          )}
-                          <span>{seat.seatResponse.seatNumber}</span>
-                          <span className="text-[8px] opacity-75 font-normal">
-                            {seat.seatResponse.seatType === 'SLEEPER' ? 'Nằm' : 'Ngồi'}
-                          </span>
-                        </button>
+                      const isSelected = selectedSeats.some(s => s.id === seat.id);
+                      const isBooked = seat.status === 'BOOKED';
+                      const isHeld = seat.status === 'HELD';
+                      const isVip = seat.seatResponse.isVip;
 
-                        {/* Tooltip on Hover */}
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 bg-baolau-dark text-white text-[10px] rounded p-2 opacity-0 pointer-events-none group-hover:opacity-100 transition z-20 text-center shadow-lg border border-white/10 space-y-1">
-                          <p className="font-bold text-baolau-yellow text-xs">{seat.seatResponse.seatNumber}</p>
-                          <p>Loại: {seat.seatResponse.seatType === 'SLEEPER' ? 'Giường nằm' : 'Ghế ngồi'} {isVip ? 'VIP' : 'Thường'}</p>
-                          <p>Giá: {formatPrice(seat.price)}</p>
-                          <p className="border-t border-white/10 pt-1 font-bold text-gray-300">
-                            Trạng thái: {statusLabel}
-                          </p>
-                          {isHeld && seat.heldBy && (
-                            <p className="text-[9px] text-amber-300">Giữ bởi: {seat.heldBy}</p>
-                          )}
-                          {isHeld && seat.expiresAt && (
-                            <p className="text-[9px] text-amber-300">Hết hạn: {formatTime(seat.expiresAt)}</p>
-                          )}
+                      let buttonClass = 'relative w-12 h-12 rounded-lg flex flex-col items-center justify-center font-bold text-xs transition border ';
+                      let statusLabel = 'Trống';
+
+                      if (isBooked) {
+                        buttonClass += 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed';
+                        statusLabel = 'Đã bán';
+                      } else if (isHeld) {
+                        buttonClass += 'bg-amber-100 text-amber-500 border-amber-200 cursor-not-allowed';
+                        statusLabel = 'Đang giữ';
+                      } else if (isSelected) {
+                        buttonClass += 'bg-baolau-yellow text-baolau-dark border-baolau-yellow shadow-md hover:bg-baolau-yellow/90';
+                        statusLabel = 'Đang chọn';
+                      } else {
+                        // Available
+                        if (isVip) {
+                          buttonClass += 'bg-amber-50/50 text-amber-700 border-amber-300 hover:border-baolau-yellow hover:bg-amber-100/50';
+                          statusLabel = 'Trống (VIP)';
+                        } else {
+                          buttonClass += 'bg-white text-gray-700 border-gray-300 hover:border-baolau-cyan hover:bg-gray-50';
+                        }
+                      }
+
+                      return (
+                        <div key={seat.id} className="relative group">
+                          <button
+                            disabled={isBooked || isHeld}
+                            onClick={() => toggleSeatSelection(seat)}
+                            className={buttonClass}
+                          >
+                            {/* VIP Badge icon */}
+                            {isVip && !isBooked && !isHeld && (
+                              <Sparkles className="absolute top-1 right-1 text-amber-500" size={10} />
+                            )}
+                            <span>{seat.seatResponse.seatNumber}</span>
+                            <span className="text-[8px] opacity-75 font-normal">
+                              {seat.seatResponse.seatType === 'SLEEPER' ? 'Nằm' : 'Ngồi'}
+                            </span>
+                          </button>
+
+                          {/* Tooltip on Hover */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 bg-baolau-dark text-white text-[10px] rounded p-2 opacity-0 pointer-events-none group-hover:opacity-100 transition z-20 text-center shadow-lg border border-white/10 space-y-1">
+                            <p className="font-bold text-baolau-yellow text-xs">{seat.seatResponse.seatNumber}</p>
+                            <p>Loại: {seat.seatResponse.seatType === 'SLEEPER' ? 'Giường nằm' : 'Ghế ngồi'} {isVip ? 'VIP' : 'Thường'}</p>
+                            <p>Giá: {formatPrice(seat.price)}</p>
+                            <p className="border-t border-white/10 pt-1 font-bold text-gray-300">
+                              Trạng thái: {statusLabel}
+                            </p>
+                            {isHeld && seat.heldBy && (
+                              <p className="text-[9px] text-amber-300">Giữ bởi: {seat.heldBy}</p>
+                            )}
+                            {isHeld && seat.expiresAt && (
+                              <p className="text-[9px] text-amber-300">Hết hạn: {formatTime(seat.expiresAt)}</p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

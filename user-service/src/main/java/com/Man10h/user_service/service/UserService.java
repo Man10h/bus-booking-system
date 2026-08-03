@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 public interface UserService {
     public void registerUser(UserRegisterRequest request);
     public boolean verifyUser(String email, String verificationCode);
+    public void resendVerificationCode(String email);
     public UserResponse checkCredentials(UserLoginRequest request);
     public UserResponse getUserDetails(String id);
     public UserResponse getUserByEmail(String email);

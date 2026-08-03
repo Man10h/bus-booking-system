@@ -47,6 +47,7 @@ function App() {
     setArrivalCity,
     setDepartureDate,
     loadCities,
+    loadOperators,
     fetchRoutes,
     fetchSchedules
   } = useBookingStore();
@@ -66,6 +67,7 @@ function App() {
   useEffect(() => {
     restoreSession();
     loadCities();
+    loadOperators();
   }, []);
 
   // Fetch or reset notifications based on auth state
@@ -403,7 +405,7 @@ function App() {
       {/* Footer */}
       <footer className="bg-baolau-dark text-gray-400 text-xs py-8 border-t border-white/5 mt-auto">
         <div className="max-w-5xl w-full mx-auto px-4 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p>© 2026 Baolau Bus Booking. Bản quyền thuộc về Baolau System.</p>
+          <p>© 2026 BusBooking. Bản quyền thuộc về BusBooking System.</p>
           <div className="flex space-x-6">
             <a href="#" className="hover:text-white transition">Điều khoản sử dụng</a>
             <a href="#" className="hover:text-white transition">Chính sách bảo mật</a>

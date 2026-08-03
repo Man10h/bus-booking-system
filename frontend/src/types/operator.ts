@@ -31,3 +31,35 @@ export interface VehicleResponse {
   vehicleType?: VehicleTypeResponse;
   vehicleTypeResponse?: VehicleTypeResponse;
 }
+
+export interface StatisticOverviewResponse {
+  totalBookings: number;
+  completedBookings: number;
+  cancelledBookings: number;
+  pendingBookings: number;
+  todayRevenue: number;
+  monthRevenue: number;
+  totalRevenue: number;
+  activeRoute: number;
+  activeVehicle: number;
+  openSchedule: number;
+  runningSchedule: number;
+}
+
+export interface RevenueChartData {
+  label: string;
+  revenue: number;
+}
+
+export interface TopRouteResponse {
+  routeId: number;
+  routeCode: string;
+  revenue: number;
+}
+
+export interface TopVehicleResponse {
+  vehicleId: number;
+  licensePlate: string;
+  revenue: number;
+}
+

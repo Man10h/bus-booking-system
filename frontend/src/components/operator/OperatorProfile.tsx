@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOperatorStore } from '../../store/useOperatorStore';
 import type { MerchantResponse } from '../../types/operator';
+import { cloudinaryService } from '../../services/cloudinaryService';
 import { 
   Building2, 
   CreditCard, 
@@ -40,6 +41,8 @@ export const OperatorProfile: React.FC = () => {
   const [companyName, setCompanyName] = useState(profile?.companyName || '');
   const [taxCode, setTaxCode] = useState(profile?.taxCode || '');
   const [contactPhone, setContactPhone] = useState(profile?.contactPhone || '');
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl || '');
+  const [isUploading, setIsUploading] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
 
   // Modal & Edit/Delete State
@@ -65,12 +68,41 @@ export const OperatorProfile: React.FC = () => {
     fetchMerchants(0, 5);
   }, []);
 
+  // Sync state with profile
+  useEffect(() => {
+    if (profile) {
+      setCompanyName(profile.companyName || '');
+      setTaxCode(profile.taxCode || '');
+      setContactPhone(profile.contactPhone || '');
+      setAvatarUrl(profile.avatarUrl || '');
+    }
+  }, [profile]);
+
+  const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setLocalError(null);
+    try {
+      const url = await cloudinaryService.uploadImage(file, 'operator_logos');
+      setAvatarUrl(url);
+      setProfileSuccessMsg('Tải logo nhà xe lên thành công!');
+      setTimeout(() => setProfileSuccessMsg(''), 3000);
+    } catch (err: any) {
+      console.error(err);
+      setLocalError('Lỗi khi tải ảnh lên Cloudinary.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setProfileSuccessMsg('');
     setLocalError(null);
     try {
-      await updateProfile({ companyName, taxCode, contactPhone });
+      await updateProfile({ companyName, taxCode, contactPhone, avatarUrl });
       setProfileSuccessMsg('Cập nhật hồ sơ nhà xe thành công!');
       setTimeout(() => setProfileSuccessMsg(''), 3000);
     } catch (err: any) {
@@ -206,6 +238,49 @@ export const OperatorProfile: React.FC = () => {
             </div>
 
             <form onSubmit={handleUpdateProfile} className="space-y-4 font-sans">
+              {/* Logo Upload Section */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Logo nhà xe</label>
+                <div className="flex items-center space-x-4 p-3 border border-gray-200 rounded-none bg-gray-50/50 mb-2">
+                  <div className="w-16 h-16 bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400 overflow-hidden shrink-0 relative">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="Logo Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <Building2 size={24} />
+                    )}
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white">
+                        <Loader2 className="animate-spin" size={16} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="logo-upload"
+                      className="hidden"
+                      onChange={handleLogoFileChange}
+                      disabled={isUploading}
+                    />
+                    <label
+                      htmlFor="logo-upload"
+                      className="inline-block bg-white hover:bg-gray-50 border border-gray-300 hover:border-baolau-cyan text-gray-700 font-bold px-3 py-1.5 rounded-none text-[10px] uppercase tracking-wider cursor-pointer select-none transition"
+                    >
+                      {isUploading ? 'Đang tải...' : 'Tải logo lên'}
+                    </label>
+                    <p className="text-[9px] text-gray-400">Định dạng JPG, PNG. Tối đa 5MB.</p>
+                  </div>
+                </div>
+                <input
+                  type="url"
+                  value={avatarUrl}
+                  onChange={(e) => setAvatarUrl(e.target.value)}
+                  placeholder="Hoặc nhập URL logo trực tiếp"
+                  className="w-full bg-gray-50 border border-gray-300 rounded-none px-3 py-2 text-xs focus:outline-none focus:border-baolau-cyan focus:bg-white transition"
+                />
+              </div>
+
               <div className="space-y-1">
                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Tên công ty / Nhà xe</label>
                 <div className="relative">

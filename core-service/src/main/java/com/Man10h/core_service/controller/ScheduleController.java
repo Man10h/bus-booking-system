@@ -25,11 +25,11 @@ public class ScheduleController {
 
     @PreAuthorize("hasRole('OPERATOR')")
     @PostMapping("/schedules")
-    public ResponseEntity<ApiResponse<ScheduleSummaryResponse>> createSchedule(
+    public ResponseEntity<ApiResponse<ScheduleDetailResponse>> createSchedule(
             @RequestBody @Valid CreateScheduleRequest request,
             @AuthenticationPrincipal Jwt jwt
     ){
-        ScheduleSummaryResponse data = scheduleService.createSchedule(jwt.getSubject(), request);
+        ScheduleDetailResponse data = scheduleService.createSchedule(jwt.getSubject(), request);
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 201));
     }
 

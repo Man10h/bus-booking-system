@@ -1,3 +1,5 @@
+import type { VehicleResponse } from './operator';
+
 export interface OperatorResponse {
   id: string;
   companyName: string;
@@ -58,6 +60,10 @@ export interface ScheduleSummaryResponse {
   availableSeats: number;
   status: string;
   totalSeats: number;
+  departureCityName?: string;
+  arrivalCityName?: string;
+  vehicleResponse?: VehicleResponse;
+  routeDetailResponse?: RouteDetailResponse;
 }
 
 export interface SchedulePageResponse {

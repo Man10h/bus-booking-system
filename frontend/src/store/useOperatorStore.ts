@@ -4,7 +4,11 @@ import type {
   OperatorResponse, 
   MerchantResponse, 
   VehicleResponse, 
-  VehicleTypeResponse
+  VehicleTypeResponse,
+  StatisticOverviewResponse,
+  RevenueChartData,
+  TopRouteResponse,
+  TopVehicleResponse
 } from '../types/operator';
 import type { 
   RouteSummaryResponse,
@@ -25,13 +29,18 @@ interface OperatorState {
   schedulesPage: { totalElements: number; totalPages: number; currentPage: number };
   vehicleTypes: VehicleTypeResponse[];
   activeSeats: SeatResponse[];
+  statisticOverview: StatisticOverviewResponse | null;
+  revenueChartData: RevenueChartData[];
+  topRoutes: TopRouteResponse[];
+  topVehicles: TopVehicleResponse[];
+  isStatsLoading: boolean;
   isLoading: boolean;
   error: string | null;
 
   // Actions
   fetchProfile: () => Promise<OperatorResponse | null>;
   createProfile: (data: { companyName: string; taxCode: string; contactPhone: string }) => Promise<void>;
-  updateProfile: (data: { companyName: string; taxCode: string; contactPhone: string }) => Promise<void>;
+  updateProfile: (data: { companyName: string; taxCode: string; contactPhone: string; avatarUrl?: string }) => Promise<void>;
   fetchProviders: () => Promise<void>;
   fetchMerchants: (page: number, size: number) => Promise<void>;
   setupMerchant: (provider: string, data: { merchantCode: string; secretKey: string }) => Promise<void>;
@@ -42,6 +51,7 @@ interface OperatorState {
   createRoute: (data: any) => Promise<void>;
   updateRoute: (routeId: number, data: any) => Promise<void>;
   deactivateRoute: (routeId: number) => Promise<void>;
+  activateRoute: (routeId: number) => Promise<void>;
 
   fetchVehicles: (page: number, size: number) => Promise<void>;
   fetchVehicleTypes: () => Promise<void>;
@@ -56,6 +66,11 @@ interface OperatorState {
   createSchedule: (data: any) => Promise<void>;
   updateSchedule: (scheduleId: number, data: any) => Promise<void>;
   cancelSchedule: (scheduleId: number) => Promise<void>;
+
+  fetchStatsOverview: () => Promise<void>;
+  fetchRevenueChart: (from: string, to: string, type: 'DAY' | 'MONTH') => Promise<void>;
+  fetchTopRoutes: () => Promise<void>;
+  fetchTopVehicles: () => Promise<void>;
 }
 
 export const useOperatorStore = create<OperatorState>((set, get) => ({
@@ -71,6 +86,11 @@ export const useOperatorStore = create<OperatorState>((set, get) => ({
   schedulesPage: { totalElements: 0, totalPages: 0, currentPage: 0 },
   vehicleTypes: [],
   activeSeats: [],
+  statisticOverview: null,
+  revenueChartData: [],
+  topRoutes: [],
+  topVehicles: [],
+  isStatsLoading: false,
   isLoading: false,
   error: null,
 
@@ -104,7 +124,10 @@ export const useOperatorStore = create<OperatorState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const updated = await operatorService.updateProfile(data);
-      set({ profile: updated, isLoading: false });
+      set((state) => ({
+        profile: updated ? updated : (state.profile ? { ...state.profile, ...data } : null),
+        isLoading: false
+      }));
     } catch (err: any) {
       set({ error: err.message || 'Lỗi cập nhật hồ sơ nhà xe', isLoading: false });
       throw err;
@@ -234,6 +257,17 @@ export const useOperatorStore = create<OperatorState>((set, get) => ({
       await get().fetchRoutes(get().routesPage.currentPage, 10);
     } catch (err: any) {
       set({ error: err.message || 'Lỗi hủy hoạt động tuyến chạy', isLoading: false });
+      throw err;
+    }
+  },
+
+  activateRoute: async (routeId) => {
+    try {
+      set({ isLoading: true, error: null });
+      await operatorService.activateRoute(routeId);
+      await get().fetchRoutes(get().routesPage.currentPage, 10);
+    } catch (err: any) {
+      set({ error: err.message || 'Lỗi kích hoạt lại tuyến chạy', isLoading: false });
       throw err;
     }
   },
@@ -378,6 +412,44 @@ export const useOperatorStore = create<OperatorState>((set, get) => ({
     } catch (err: any) {
       set({ error: err.message || 'Lỗi hủy lịch trình', isLoading: false });
       throw err;
+    }
+  },
+
+  fetchStatsOverview: async () => {
+    try {
+      set({ isStatsLoading: true, error: null });
+      const data = await operatorService.getStatisticOverview();
+      set({ statisticOverview: data, isStatsLoading: false });
+    } catch (err: any) {
+      set({ error: err.message || 'Lỗi tải thống kê tổng quan', isStatsLoading: false });
+    }
+  },
+
+  fetchRevenueChart: async (from, to, type) => {
+    try {
+      set({ isStatsLoading: true, error: null });
+      const data = await operatorService.getRevenueChart({ from, to, statisticType: type });
+      set({ revenueChartData: data, isStatsLoading: false });
+    } catch (err: any) {
+      set({ error: err.message || 'Lỗi tải dữ liệu biểu đồ doanh thu', isStatsLoading: false });
+    }
+  },
+
+  fetchTopRoutes: async () => {
+    try {
+      const data = await operatorService.getTopRoutes();
+      set({ topRoutes: data });
+    } catch (err: any) {
+      console.warn('Lỗi tải top tuyến đường:', err);
+    }
+  },
+
+  fetchTopVehicles: async () => {
+    try {
+      const data = await operatorService.getTopVehicles();
+      set({ topVehicles: data });
+    } catch (err: any) {
+      console.warn('Lỗi tải top xe chạy:', err);
     }
   }
 }));

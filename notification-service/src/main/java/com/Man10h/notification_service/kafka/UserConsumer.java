@@ -28,6 +28,7 @@ public class UserConsumer {
             String content = mailService.buildEmailTemplate("Verify account", String.format("Your verification code is %s. This code will expire at %s", userVerificationResponse.verificationCode(), userVerificationResponse.verificationExpiryDate()));
 
             mailService.sendMail(userVerificationResponse.email(), "verify-account", content);
+            ack.acknowledge();
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

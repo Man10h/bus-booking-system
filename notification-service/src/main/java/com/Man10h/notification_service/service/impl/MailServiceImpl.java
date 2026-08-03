@@ -4,9 +4,9 @@ import com.Man10h.notification_service.service.MailService;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,20 +16,56 @@ public class MailServiceImpl implements MailService {
 
     private final JavaMailSender mailSender;
 
+    @Value("${spring.mail.username}")
+    private String fromAddress;
+
+    private static final String FROM_NAME = "Bus Booking System";
+
     @Override
     public void sendMail(String to, String subject, String content) {
-        try{
+        try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
-            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true);
+            // "true" = multipart -> cho phép gửi kèm bản text thuần
+            MimeMessageHelper helper = new MimeMessageHelper(
+                    mimeMessage,
+                    MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
+                    "UTF-8"
+            );
 
-            mimeMessageHelper.setTo(to);
-            mimeMessageHelper.setSubject(subject);
-            mimeMessageHelper.setText(content, true);
+            helper.setFrom(fromAddress, FROM_NAME);
+            helper.setTo(to);
+            helper.setSubject(subject);
+
+            // Phần text thuần giúp giảm khả năng bị đánh giá là spam
+            String plainText = buildPlainTextFallback(subject, content);
+            helper.setText(plainText, content); // (plainText, htmlText)
+
             mailSender.send(mimeMessage);
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("Send mail failed: {}", e.getMessage());
             throw new RuntimeException(e.getMessage());
         }
+    }
+
+    /**
+     * Tạo bản text thuần đơn giản từ nội dung HTML (fallback cho client
+     * không hỗ trợ HTML, đồng thời tăng độ tin cậy chống spam).
+     */
+    private String buildPlainTextFallback(String title, String htmlMessage) {
+        String stripped = htmlMessage
+                .replaceAll("<[^>]*>", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+
+        return """
+                %s
+
+                %s
+
+                --
+                Bus Booking System
+                Email này được gửi tự động, vui lòng không trả lời.
+                """.formatted(title, stripped);
     }
 
     @Override
@@ -39,12 +75,23 @@ public class MailServiceImpl implements MailService {
         <html lang="vi">
         <head>
             <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <title>%s</title>
             <style>
                 body{
                     margin:0;
                     padding:0;
                     background:#f4f6f9;
                     font-family:Arial,Helvetica,sans-serif;
+                    -webkit-text-size-adjust:100%%;
+                }
+
+                .preheader{
+                    display:none;
+                    max-height:0;
+                    overflow:hidden;
+                    mso-hide:all;
                 }
 
                 .container{
@@ -66,7 +113,7 @@ public class MailServiceImpl implements MailService {
                     color:#ffffff;
                     text-align:center;
                     padding:24px;
-                    font-size:24px;
+                    font-size:22px;
                     font-weight:bold;
                 }
 
@@ -77,12 +124,19 @@ public class MailServiceImpl implements MailService {
                     font-size:16px;
                 }
 
+                .content h2{
+                    margin-top:0;
+                    color:#111827;
+                    font-size:18px;
+                }
+
                 .message{
                     margin:24px 0;
                     padding:18px;
                     background:#eff6ff;
                     border-left:5px solid #2563eb;
                     border-radius:8px;
+                    word-break:break-word;
                 }
 
                 .button{
@@ -96,16 +150,31 @@ public class MailServiceImpl implements MailService {
                     font-weight:bold;
                 }
 
+                .divider{
+                    border:none;
+                    border-top:1px solid #e5e7eb;
+                    margin:24px 0;
+                }
+
                 .footer{
                     text-align:center;
-                    padding:20px;
+                    padding:24px;
                     background:#f9fafb;
                     color:#9ca3af;
-                    font-size:13px;
+                    font-size:12px;
+                    line-height:1.6;
+                }
+
+                .footer a{
+                    color:#6b7280;
+                    text-decoration:underline;
                 }
             </style>
         </head>
         <body>
+
+        <!-- Preheader: dòng preview hiển thị trong inbox, giúp tăng tỷ lệ mở & giảm nghi ngờ spam -->
+        <div class="preheader">%s</div>
 
         <div class="container">
             <div class="card">
@@ -125,13 +194,22 @@ public class MailServiceImpl implements MailService {
                     </div>
 
                     <p>
-                        Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi.
+                        Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email hỗ trợ
+                        <a href="mailto:support@busbooking.com">support@busbooking.com</a>.
+                    </p>
+
+                    <hr class="divider">
+
+                    <p style="font-size:13px;color:#9ca3af;">
+                        Đây là email tự động từ hệ thống, vui lòng không trả lời trực tiếp email này.
                     </p>
                 </div>
 
                 <div class="footer">
-                    © 2026 Bus Booking System<br>
-                    Email này được gửi tự động, vui lòng không trả lời.
+                    © 2026 Bus Booking System. Mọi quyền được bảo lưu.<br>
+                    Địa chỉ: 123 Đường ABC, Quận 1, TP. Hồ Chí Minh, Việt Nam<br>
+                    Bạn nhận được email này vì có tài khoản trên hệ thống Bus Booking System.<br>
+                    <a href="{{unsubscribeLink}}">Hủy nhận email thông báo</a>
                 </div>
 
             </div>
@@ -139,6 +217,6 @@ public class MailServiceImpl implements MailService {
 
         </body>
         </html>
-        """, title, message);
+        """, title, title, title, message);
     }
 }

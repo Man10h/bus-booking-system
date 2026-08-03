@@ -54,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onProfileClick }) 
       {/* Left: Brand/Logo */}
       <div className="flex items-center space-x-8">
         <Link to="/" className="flex items-center space-x-2 font-oswald text-2xl font-bold tracking-wider text-white">
-          <span className="text-baolau-yellow">B</span>AOLAU
+          <span className="text-baolau-yellow">B</span>USBOOKING
         </Link>
         <div className="hidden md:flex items-center space-x-6 text-sm font-medium text-gray-300">
           <Link to="/" className="hover:text-baolau-yellow transition flex items-center space-x-1">

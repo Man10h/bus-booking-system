@@ -228,6 +228,9 @@ public class RouteServiceImpl implements RouteService {
             throw new IllegalStateException("Schedule is already open or running");
         }
         Route route = optional.get();
+        if(route.getStatus() == RouteStatus.INACTIVE){
+            return;
+        }
         route.setStatus(RouteStatus.INACTIVE);
 
         routeRepository.save(route);
@@ -244,6 +247,9 @@ public class RouteServiceImpl implements RouteService {
             throw new AccessDeniedException("You don't own this route");
         }
         Route route = optional.get();
+        if(route.getStatus() == RouteStatus.ACTIVE){
+            return;
+        }
         route.setStatus(RouteStatus.ACTIVE);
         routeRepository.save(route);
     }

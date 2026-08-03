@@ -168,6 +168,7 @@ services:
       EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
       SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
       SPRING_KAFKA_SERVER: kafka:9092
+      TZ: Asia/Ho_Chi_Minh
     networks:
       - bus-network
 
@@ -263,6 +264,8 @@ services:
       SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
       SPRING_KAFKA_SERVER: kafka:9092
       TZ: Asia/Ho_Chi_Minh
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
     networks:
       - bus-network
 
@@ -307,6 +310,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_CLOUDINARY_API_KEY=${VITE_CLOUDINARY_API_KEY}
+        - VITE_CLOUDINARY_API_SECRET=${VITE_CLOUDINARY_API_SECRET}
+        - VITE_CLOUDINARY_CLOUD_NAME=${VITE_CLOUDINARY_CLOUD_NAME}
     container_name: frontend
     ports:
       - "3000:80"

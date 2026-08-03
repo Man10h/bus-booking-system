@@ -99,6 +99,7 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.GET, "/payments/vnpay/ipn**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/core/cities").permitAll()
                         .pathMatchers(HttpMethod.GET, "/core/operators").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/users/resend**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->

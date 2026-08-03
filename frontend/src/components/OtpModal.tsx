@@ -14,8 +14,27 @@ export const OtpModal: React.FC<OtpModalProps> = ({ isOpen, email, onClose, onSu
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleResend = async () => {
+    setError(null);
+    setSuccessMsg(null);
+    setIsResending(true);
+    try {
+      await authService.resendOtp(email);
+      setSuccessMsg('Mã OTP mới đã được gửi lại vào email của bạn!');
+    } catch (err: any) {
+      console.error(err);
+      setError(
+        err.response?.data?.message || 
+        'Gửi lại mã OTP thất bại. Vui lòng thử lại sau.'
+      );
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,10 +155,11 @@ export const OtpModal: React.FC<OtpModalProps> = ({ isOpen, email, onClose, onSu
             <span className="text-xs text-gray-500">Không nhận được mã? </span>
             <button 
               type="button" 
-              className="text-xs text-baolau-cyan hover:underline transition"
-              onClick={() => alert('Yêu cầu gửi lại mã OTP đã được ghi nhận!')}
+              className="text-xs text-baolau-cyan hover:underline transition disabled:opacity-50"
+              onClick={handleResend}
+              disabled={isResending || isLoading}
             >
-              Gửi lại OTP
+              {isResending ? 'Đang gửi lại...' : 'Gửi lại OTP'}
             </button>
           </div>
         </div>

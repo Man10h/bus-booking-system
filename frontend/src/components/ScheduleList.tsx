@@ -2,29 +2,14 @@ import React from 'react';
 import type { ScheduleSummaryResponse } from '../types/booking';
 import { useBookingStore } from '../store/useBookingStore';
 import { SeatMap } from './SeatMap';
-import { Clock, Star, Award } from 'lucide-react';
+import { Clock, Award } from 'lucide-react';
 
 interface ScheduleListProps {
   schedules: ScheduleSummaryResponse[];
 }
 
 export const ScheduleList: React.FC<ScheduleListProps> = ({ schedules }) => {
-  const { selectedSchedule, setSelectedSchedule } = useBookingStore();
-
-  const getOperatorName = (operatorId: string) => {
-    // Return standard Vietnamese operators based on ID
-    if (operatorId.includes('futa') || operatorId.includes('9837a28f')) return 'Phương Trang (FUTA)';
-    if (operatorId.includes('sao_viet')) return 'Sao Việt';
-    if (operatorId.includes('hanh_cafe')) return 'Hạnh Cafe';
-    if (operatorId.includes('cuc_tung')) return 'Cúc Tùng';
-    return 'Nhà Xe Đối Tác';
-  };
-
-  const getOperatorRating = (operatorId: string) => {
-    if (operatorId.includes('9837a28f')) return 4.8;
-    if (operatorId.includes('sao_viet')) return 4.7;
-    return 4.5;
-  };
+  const { selectedSchedule, setSelectedSchedule, operators } = useBookingStore();
 
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
@@ -35,6 +20,14 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ schedules }) => {
     const hrs = String(d.getHours()).padStart(2, '0');
     const mins = String(d.getMinutes()).padStart(2, '0');
     return `${hrs}:${mins}`;
+  };
+
+  const formatDate = (isoString: string) => {
+    const d = new Date(isoString);
+    const date = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${date}/${month}/${year}`;
   };
 
   const calculateDuration = (startStr: string, endStr: string) => {
@@ -62,7 +55,7 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ schedules }) => {
     <div className="space-y-6">
       {schedules.map((schedule) => {
         const isSelected = selectedSchedule?.id === schedule.id;
-        const rating = getOperatorRating(schedule.operatorId);
+        const operator = operators.find((op) => op.id === schedule.operatorId);
 
         return (
           <div 
@@ -75,24 +68,46 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ schedules }) => {
             <div className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               
               {/* Operator details */}
-              <div className="flex items-center space-x-3 lg:w-1/4">
-                <div className="w-10 h-10 bg-baolau-dark/5 text-baolau-dark rounded-full flex items-center justify-center font-bold text-sm">
-                  {getOperatorName(schedule.operatorId).charAt(0)}
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-800 text-sm">{getOperatorName(schedule.operatorId)}</h4>
-                  <div className="flex items-center text-xs text-baolau-yellow mt-0.5">
-                    <Star size={12} className="fill-current mr-1" />
-                    <span className="font-bold text-gray-700">{rating}</span>
+              <div className="flex items-center space-x-3 lg:w-1/5">
+                {operator?.avatarUrl ? (
+                  <img 
+                    src={operator.avatarUrl} 
+                    alt={operator.companyName} 
+                    className="w-10 h-10 rounded-full object-cover border border-gray-100"
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-baolau-dark/5 text-baolau-dark rounded-full flex items-center justify-center font-bold text-sm">
+                    {(operator?.companyName || 'Nhà Xe').charAt(0)}
                   </div>
+                )}
+                <div>
+                  <h4 className="font-bold text-gray-800 text-sm">{operator?.companyName || 'Nhà Xe Đối Tác'}</h4>
+                  {operator?.contactPhone && (
+                    <p className="text-[10px] text-gray-500 font-semibold mt-0.5">Hotline: {operator.contactPhone}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Route Cities */}
+              <div className="flex flex-col justify-center lg:w-1/5">
+                <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Tuyến đường</span>
+                <div className="flex items-center space-x-1.5 mt-1">
+                  <span className="font-bold text-gray-800 text-xs">
+                    {schedule.routeDetailResponse?.departureCityName || schedule.departureCityName || 'N/A'}
+                  </span>
+                  <span className="text-baolau-cyan font-extrabold text-sm">→</span>
+                  <span className="font-bold text-gray-800 text-xs">
+                    {schedule.routeDetailResponse?.arrivalCityName || schedule.arrivalCityName || 'N/A'}
+                  </span>
                 </div>
               </div>
 
               {/* Timing & duration */}
-              <div className="flex items-center justify-between lg:justify-center space-x-8 lg:w-1/3">
+              <div className="flex items-center justify-between lg:justify-center space-x-8 lg:w-1/4">
                 <div className="text-center">
-                  <span className="block font-bold text-gray-800 text-base">{formatTime(schedule.departureTime)}</span>
-                  <span className="text-[10px] text-gray-400 font-medium">Khởi hành</span>
+                  <span className="block font-bold text-[#132B40] text-base">{formatTime(schedule.departureTime)}</span>
+                  <span className="block text-[10px] text-gray-500 font-bold mt-0.5">{formatDate(schedule.departureTime)}</span>
+                  <span className="text-[10px] text-gray-400 font-medium mt-1 block">Khởi hành</span>
                 </div>
                 <div className="flex flex-col items-center justify-center flex-grow max-w-[120px]">
                   <span className="text-[10px] text-gray-400 font-bold mb-1 flex items-center space-x-1">
@@ -105,8 +120,9 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ schedules }) => {
                   </div>
                 </div>
                 <div className="text-center">
-                  <span className="block font-bold text-gray-800 text-base">{formatTime(schedule.arrivalTime)}</span>
-                  <span className="text-[10px] text-gray-400 font-medium">Đến nơi</span>
+                  <span className="block font-bold text-[#132B40] text-base">{formatTime(schedule.arrivalTime)}</span>
+                  <span className="block text-[10px] text-gray-500 font-bold mt-0.5">{formatDate(schedule.arrivalTime)}</span>
+                  <span className="text-[10px] text-gray-400 font-medium mt-1 block">Đến nơi</span>
                 </div>
               </div>
 

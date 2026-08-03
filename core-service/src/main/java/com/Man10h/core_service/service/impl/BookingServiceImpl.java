@@ -71,7 +71,19 @@ public class BookingServiceImpl implements BookingService {
 
     public BookingDetailResponse toBookingDetailResponse(Booking booking){
         Schedule schedule = booking.getSchedule();
-        ScheduleSummaryResponse scheduleSummaryResponse = new ScheduleSummaryResponse(schedule.getId(), schedule.getOperatorId(),schedule.getDepartureTime(), schedule.getArrivalTime(), schedule.getBasePrice(), schedule.getVipPrice(), schedule.getAvailableSeats(), schedule.getStatus(),schedule.getTotalSeats());
+        ScheduleSummaryResponse scheduleSummaryResponse = new ScheduleSummaryResponse(
+                schedule.getId(), 
+                schedule.getOperatorId(),
+                schedule.getDepartureTime(), 
+                schedule.getArrivalTime(), 
+                schedule.getBasePrice(), 
+                schedule.getVipPrice(), 
+                schedule.getAvailableSeats(), 
+                schedule.getStatus(),
+                schedule.getTotalSeats(),
+                schedule.getRoute() != null && schedule.getRoute().getDepartureCity() != null ? schedule.getRoute().getDepartureCity().getName() : null,
+                schedule.getRoute() != null && schedule.getRoute().getArrivalCity() != null ? schedule.getRoute().getArrivalCity().getName() : null
+        );
         List<ScheduleSeatResponse> scheduleSeatResponseList =
                 booking.getScheduleSeatList()
                         .stream()
@@ -292,6 +304,7 @@ public class BookingServiceImpl implements BookingService {
 
 
     @Transactional
+    @CacheEvict(value = "bookings", allEntries = true)
     public void updateBookingPaidStatus(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new BookingNotFoundException("Booking not found"));

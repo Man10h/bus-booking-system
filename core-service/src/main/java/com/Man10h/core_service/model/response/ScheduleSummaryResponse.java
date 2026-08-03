@@ -15,6 +15,8 @@ public record ScheduleSummaryResponse(
         BigDecimal vipPrice,
         Long availableSeats,
         ScheduleStatus status,
-        Long totalSeats
+        Long totalSeats,
+        String departureCityName,
+        String arrivalCityName
 )implements Serializable {
 }

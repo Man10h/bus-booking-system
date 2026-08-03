@@ -221,7 +221,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
             
             {/* Scrollbox Terms */}
             <div className="bg-gray-50 border border-gray-200 p-3 rounded text-xs text-gray-500 h-24 overflow-y-auto space-y-2">
-              <p className="font-semibold">ĐIỀU KHOẢN SỬ DỤNG DỊCH VỤ BAOLAU BUS BOOKING SYSTEM</p>
+              <p className="font-semibold">ĐIỀU KHOẢN SỬ DỤNG DỊCH VỤ BUSBOOKING SYSTEM</p>
               <p>1. Bằng việc đăng ký tài khoản, khách hàng cam kết cung cấp thông tin cá nhân chính xác và hoàn toàn chịu trách nhiệm về thông tin đã cung cấp.</p>
               <p>2. Dịch vụ đặt vé chỉ có hiệu lực sau khi hệ thống ghi nhận thanh toán thành công và gửi mã vé điện tử qua email.</p>
               <p>3. Các chính sách đổi vé, hủy vé và hoàn tiền sẽ được áp dụng theo quy định chi tiết của từng nhà xe liên kết.</p>

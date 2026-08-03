@@ -52,9 +52,9 @@ AND s.departureTime < :arrivalTime
 AND s.arrivalTime > :departureTime
 """)
     boolean existsOverlappingSchedule(
-            Long vehicleId,
-            LocalDateTime departureTime,
-            LocalDateTime arrivalTime
+            @Param("vehicleId") Long vehicleId,
+            @Param("departureTime") LocalDateTime departureTime,
+            @Param("arrivalTime") LocalDateTime arrivalTime
     );
 
     @Modifying

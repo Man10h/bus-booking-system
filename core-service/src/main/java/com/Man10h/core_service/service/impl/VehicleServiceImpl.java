@@ -129,19 +129,37 @@ public class VehicleServiceImpl implements VehicleService {
 
     @Transactional
     public void updateVehicle(Long id, String userId, UpdateVehicleRequest request) {
-        if(!vehicleTypeRepository.existsById(id)){
+        if(!vehicleTypeRepository.existsById(request.vehicleTypeId())){
             throw new VehicleTypeNotFoundException("Vehicle type not found");
         }
-        Vehicle vehicle = getVehicleDetailById(id);
+        Vehicle vehicle = vehicleRepository.getDetailWithSeatsById(id)
+                .orElseThrow(() -> new VehicleNotFoundException("Vehicle not found"));
         if(!vehicle.getOperator().getUserId().equals(userId)){
             throw new AccessDeniedException("You not owned this vehicle");
         }
+
+        // If changing vehicle type, check for active schedules and regenerate seats
+        if (!vehicle.getVehicleType().getId().equals(request.vehicleTypeId())) {
+            if (scheduleRepository.existsByVehicle_IdAndStatusIn(id, List.of(ScheduleStatus.OPEN, ScheduleStatus.RUNNING))) {
+                throw new IllegalStateException("Cannot change vehicle type because the vehicle has active schedules");
+            }
+            VehicleType newVehicleType = vehicleTypeRepository.findById(request.vehicleTypeId())
+                    .orElseThrow(() -> new VehicleTypeNotFoundException("Vehicle type not found"));
+
+            vehicle.getVehicleSeatList().clear();
+            List<Seat> seatList = seatGenerator.generate(newVehicleType);
+            seatList.forEach(seat -> seat.setVehicle(vehicle));
+            vehicle.getVehicleSeatList().addAll(seatList);
+            vehicle.setVehicleType(newVehicleType);
+            vehicle.setTotalSeats((long) newVehicleType.getRows() * newVehicleType.getCols() * newVehicleType.getFloors());
+        } else {
+            vehicle.setTotalSeats(request.totalSeats());
+        }
+
         vehicle.setLicensePlate(request.licensePlate());
         vehicle.setBrand(request.brand());
         vehicle.setModel(request.model());
-        vehicle.setTotalSeats(request.totalSeats());
         vehicle.setDescription(request.description());
-        vehicle.setVehicleType(vehicleTypeRepository.getReferenceById(request.vehicleTypeId()));
         vehicleRepository.save(vehicle);
     }
 

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 interface StopInput {
+  id?: number;
   stopOrder: number;
   stopName: string;
   distanceFromStart: number;
@@ -33,6 +34,7 @@ export const OperatorRoutes: React.FC = () => {
     createRoute, 
     updateRoute, 
     deactivateRoute, 
+    activateRoute, 
     isLoading 
   } = useOperatorStore();
   const { cityOptions, loadCities } = useBookingStore();
@@ -91,6 +93,7 @@ export const OperatorRoutes: React.FC = () => {
       const transformedStops = (details.routeStopResponse || []).map((stop: any) => {
         const stopCity = cityOptions.find(c => c.name === stop.cityName);
         return {
+          id: stop.id,
           stopOrder: stop.stopOrder,
           stopName: stop.stopName,
           distanceFromStart: stop.distanceFromStart,
@@ -180,10 +183,19 @@ export const OperatorRoutes: React.FC = () => {
     }
   };
 
-  const handleDeactivate = async (routeId: number) => {
-    if (window.confirm('Bạn có chắc chắn muốn thay đổi trạng thái hoạt động của tuyến xe này?')) {
+  const handleToggleStatus = async (routeId: number, currentStatus: string) => {
+    const isCurrentlyActive = currentStatus === 'ACTIVE';
+    const confirmMessage = isCurrentlyActive
+      ? 'Bạn có chắc chắn muốn tạm dừng hoạt động của tuyến xe này?'
+      : 'Bạn có chắc chắn muốn kích hoạt lại tuyến xe này?';
+
+    if (window.confirm(confirmMessage)) {
       try {
-        await deactivateRoute(routeId);
+        if (isCurrentlyActive) {
+          await deactivateRoute(routeId);
+        } else {
+          await activateRoute(routeId);
+        }
       } catch (err: any) {
         alert(err.message || 'Lỗi thay đổi trạng thái tuyến xe');
       }
@@ -259,7 +271,7 @@ export const OperatorRoutes: React.FC = () => {
                         <Edit2 size={14} />
                       </button>
                       <button
-                        onClick={() => handleDeactivate(route.id)}
+                        onClick={() => handleToggleStatus(route.id, route.status)}
                         className={`p-1.5 rounded transition ${
                           route.status === 'ACTIVE'
                             ? 'bg-red-50 text-red-400 hover:bg-red-500 hover:text-white'

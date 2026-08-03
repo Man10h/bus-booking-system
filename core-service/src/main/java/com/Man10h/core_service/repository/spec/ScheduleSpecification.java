@@ -9,6 +9,15 @@ import org.springframework.data.jpa.domain.Specification;
 import java.time.LocalDateTime;
 
 public class ScheduleSpecification {
+    public static Specification<Schedule> operator(String operatorId){
+        return (root, query, cb) -> {
+          if(operatorId == null){
+              return null;
+          }
+          return cb.equal(root.get("operatorId"), operatorId);
+        };
+    }
+
     public static Specification<Schedule> route(Long routeId){
         return (root, query, cb) -> {
             if(routeId == null){
@@ -34,7 +43,7 @@ public class ScheduleSpecification {
             if(departureTime == null){
                 return null;
             }
-            return cb.equal(root.get("departureTime"), departureTime);
+            return cb.greaterThanOrEqualTo(root.get("departureTime"), departureTime);
         };
     }
 
@@ -43,7 +52,7 @@ public class ScheduleSpecification {
             if(arrivalTime == null){
                 return null;
             }
-            return cb.equal(root.get("arrivalTime"), arrivalTime);
+            return cb.lessThanOrEqualTo(root.get("arrivalTime"), arrivalTime);
         };
     }
 

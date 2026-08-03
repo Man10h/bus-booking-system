@@ -175,13 +175,18 @@ export const OperatorSchedules: React.FC = () => {
                   return (
                     <tr key={s.id} className="hover:bg-gray-50/50 transition">
                       <td className="p-4 font-bold text-gray-900">
-                        {/* If details are missing, fallback to route ID */}
-                        {s.operatorId ? `Chuyến #${s.id}` : `Tuyến #${s.id}`}
+                        {s.routeDetailResponse 
+                          ? `${s.routeDetailResponse.routeCode} (${s.routeDetailResponse.departureCityName} → ${s.routeDetailResponse.arrivalCityName})` 
+                          : `Tuyến #${s.id}`}
                       </td>
                       <td className="p-4 font-semibold text-baolau-dark">
                         <div className="flex items-center space-x-1">
                           <Bus size={12} className="text-gray-400" />
-                          <span>Xe #{s.id}</span>
+                          <span>
+                            {s.vehicleResponse 
+                              ? `${s.vehicleResponse.licensePlate} (${s.vehicleResponse.brand})` 
+                              : `Xe #${s.id}`}
+                          </span>
                         </div>
                       </td>
                       <td className="p-4 font-medium text-gray-900">{formatDateTime(s.departureTime)}</td>

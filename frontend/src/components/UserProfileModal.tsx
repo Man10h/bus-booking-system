@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { authService } from '../services/authService';
 import { X, User, Key, CheckCircle, AlertCircle, Loader, Edit } from 'lucide-react';
+import { cloudinaryService } from '../services/cloudinaryService';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -19,6 +20,27 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
   const [address, setAddress] = useState('');
   const [gender, setGender] = useState('MALE');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const url = await cloudinaryService.uploadImage(file, 'user_avatars');
+      setAvatarUrl(url);
+      setSuccess('Tải ảnh đại diện lên thành công!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      console.error(err);
+      setError('Lỗi khi tải ảnh lên Cloudinary.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Password Fields
   const [oldPassword, setOldPassword] = useState('');
@@ -247,12 +269,43 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Đường dẫn ảnh đại diện (Avatar URL) *</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Ảnh đại diện *</label>
+                <div className="flex items-center space-x-4 p-4 border border-gray-200 rounded bg-gray-50/50 mb-2">
+                  <div className="w-16 h-16 rounded-full bg-baolau-yellow/15 flex items-center justify-center text-baolau-yellow overflow-hidden border border-baolau-yellow/30 shrink-0 relative group">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={32} />
+                    )}
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white">
+                        <Loader size={16} className="animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="avatar-upload"
+                      className="hidden"
+                      onChange={handleAvatarFileChange}
+                      disabled={isUploading}
+                    />
+                    <label
+                      htmlFor="avatar-upload"
+                      className="inline-block bg-white hover:bg-gray-50 border border-gray-300 hover:border-baolau-yellow text-gray-700 font-bold px-3 py-1.5 rounded text-xs uppercase cursor-pointer select-none transition"
+                    >
+                      {isUploading ? 'Đang tải lên...' : 'Chọn ảnh'}
+                    </label>
+                    <p className="text-[10px] text-gray-400">Hỗ trợ JPG, PNG. Dung lượng tối đa 5MB.</p>
+                  </div>
+                </div>
                 <input
                   type="url"
                   value={avatarUrl}
                   onChange={(e) => setAvatarUrl(e.target.value)}
-                  placeholder="https://example.com/avatar.jpg"
+                  placeholder="Hoặc nhập URL ảnh trực tiếp"
                   className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-baolau-yellow focus:bg-white transition"
                   required
                 />

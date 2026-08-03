@@ -10,7 +10,8 @@ public class CacheKeyUtil {
 
     public static String scheduleKey(ScheduleFilter f, Pageable pageable) {
         return String.format(
-                "r=%s:dc=%s:ac=%s:dt=%s:at=%s:vt=%s:s=%s:p=%s",
+                "o=%s:r=%s:dc=%s:ac=%s:dt=%s:at=%s:vt=%s:s=%s:p=%s",
+                value(f.operatorId()),
                 value(f.routeId()),
                 value(f.departureCityId()),
                 value(f.arrivalCityId()),

@@ -35,9 +35,15 @@ public class UserController {
 
     @GetMapping("/verify")
     public ResponseEntity<ApiResponse<Boolean>> verify(@RequestParam String email,
-                                                 @RequestParam String verificationCode) {
+                                                    @RequestParam String verificationCode) {
         Boolean data = userService.verifyUser(email, verificationCode);
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
+    }
+
+    @GetMapping("/resend")
+    public ResponseEntity<ApiResponse<?>> verify(@RequestParam String email) {
+        userService.resendVerificationCode(email);
+        return ResponseEntity.ok(new ApiResponse<>(null, "success", 200));
     }
 
     @PostMapping("/check-credentials")

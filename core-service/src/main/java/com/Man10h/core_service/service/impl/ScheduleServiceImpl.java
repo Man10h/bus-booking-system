@@ -100,7 +100,19 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     public ScheduleSummaryResponse toSummaryResponse(Schedule schedule) {
-        return new ScheduleSummaryResponse(schedule.getId(), schedule.getOperatorId(), schedule.getDepartureTime(), schedule.getArrivalTime(), schedule.getBasePrice(), schedule.getVipPrice(), schedule.getAvailableSeats(), schedule.getStatus(),schedule.getTotalSeats());
+        return new ScheduleSummaryResponse(
+                schedule.getId(), 
+                schedule.getOperatorId(), 
+                schedule.getDepartureTime(), 
+                schedule.getArrivalTime(), 
+                schedule.getBasePrice(), 
+                schedule.getVipPrice(), 
+                schedule.getAvailableSeats(), 
+                schedule.getStatus(),
+                schedule.getTotalSeats(),
+                schedule.getRoute() != null && schedule.getRoute().getDepartureCity() != null ? schedule.getRoute().getDepartureCity().getName() : null,
+                schedule.getRoute() != null && schedule.getRoute().getArrivalCity() != null ? schedule.getRoute().getArrivalCity().getName() : null
+        );
     }
 
     public ScheduleDetailResponse toDetailResponse(Schedule schedule) {
@@ -122,7 +134,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Transactional
     @CacheEvict(value = "schedules", allEntries = true)
-    public ScheduleSummaryResponse createSchedule(String userId, CreateScheduleRequest request) {
+    public ScheduleDetailResponse createSchedule(String userId, CreateScheduleRequest request) {
         if (!request.departureTime().isBefore(request.arrivalTime())) {
             throw new IllegalArgumentException("Departure time must be before arrival time");
         }
@@ -180,7 +192,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         schedule.setAvailableSeats((long) scheduleSeatList.size());
         schedule.setScheduleSeatList(scheduleSeatList);
         scheduleRepository.save(schedule);
-        return toSummaryResponse(schedule);
+        return toDetailResponse(schedule);
     }
 
     @Override
@@ -190,7 +202,8 @@ public class ScheduleServiceImpl implements ScheduleService {
     )
     public SchedulePageResponse findSchedules(ScheduleFilter filter, Pageable pageable) {
 
-        Specification<Schedule> spec = Specification.allOf(
+        Specification<Schedule> spec = Specification.anyOf(
+                operator(filter.operatorId()),
                 route(filter.routeId()),
                 routeDepartureCity(filter.departureCityId()),
                 routeArrivalCity(filter.arrivalCityId()),
@@ -199,7 +212,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                 vehicleType(filter.vehicleTypeId()),
                 status(filter.status())
         );
-        Page<ScheduleSummaryResponse> page = scheduleRepository.findAll(spec, pageable).map(this::toSummaryResponse);
+        Page<ScheduleDetailResponse> page = scheduleRepository.findAll(spec, pageable).map(this::toDetailResponse);
         return new SchedulePageResponse(
                 page.getContent(),
                 page.getTotalElements(),

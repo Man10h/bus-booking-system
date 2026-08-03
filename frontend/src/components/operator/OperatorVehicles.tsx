@@ -227,8 +227,13 @@ export const OperatorVehicles: React.FC = () => {
         </div>
       );
     }
-
-    return <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100">{grid}</div>;
+    return (
+      <div className="overflow-auto max-w-full max-h-[480px] p-1">
+        <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100 min-w-max">
+          {grid}
+        </div>
+      </div>
+    );
   };
 
   return (

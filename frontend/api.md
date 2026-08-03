@@ -239,6 +239,21 @@ Mọi kết quả trả về từ API đều được bọc trong một định 
   }
   ```
 
+#### Gửi lại mã xác thực OTP qua Email (Resend Verification Code)
+- **Method**: `GET`
+- **Path**: `/users/resend`
+- **Xác thực**: Không yêu cầu (Public)
+- **Query Parameters**:
+  - `email`: `customer@gmail.com`
+- **Response Body**:
+  ```json
+  {
+    "code": 200,
+    "message": "success",
+    "data": null
+  }
+  ```
+
 #### Kiểm tra thông tin đăng nhập (Check Credentials - Dùng cho Auth Service gọi nội bộ)
 - **Method**: `POST`
 - **Path**: `/users/check-credentials`
@@ -559,9 +574,29 @@ Mọi kết quả trả về từ API đều được bọc trong một định 
 
 #### Đổi trạng thái tuyến xe ngưng hoạt động (Deactivate Route)
 - **Method**: `PATCH`
-- **Path**: `/core/routes/{routeId}/status`
+- **Path**: `/core/routes/{routeId}/inactive`
 - **Xác thực**: Yêu cầu Token (Quyền `OPERATOR`)
-- **Response Body**: Trả về code `200` nếu thành công.
+- **Response Body**:
+  ```json
+  {
+    "code": 200,
+    "message": "success",
+    "data": null
+  }
+  ```
+
+#### Kích hoạt lại tuyến xe (Activate Route)
+- **Method**: `PATCH`
+- **Path**: `/core/routes/{routeId}/active`
+- **Xác thực**: Yêu cầu Token (Quyền `OPERATOR`)
+- **Response Body**:
+  ```json
+  {
+    "code": 200,
+    "message": "success",
+    "data": null
+  }
+  ```
 
 #### Tạo mới Lịch trình chuyến xe (Create Schedule)
 - **Method**: `POST`

@@ -8,7 +8,8 @@ import type {
   CityOption,
   BookingSummaryResponse,
   BookingDetailResponse,
-  PaymentResponse
+  PaymentResponse,
+  OperatorResponse
 } from '../types/booking';
 
 interface BookingState {
@@ -28,6 +29,7 @@ interface BookingState {
   activeBookingDetail: BookingDetailResponse | null;
   myPayments: PaymentResponse[];
   myPaymentsPage: { totalElements: number; totalPages: number; currentPage: number };
+  operators: OperatorResponse[];
   
   // Actions
   setDepartureCity: (city: CityOption | null) => void;
@@ -37,6 +39,7 @@ interface BookingState {
   fetchRoutes: () => Promise<void>;
   fetchSchedules: () => Promise<void>;
   loadCities: () => Promise<void>;
+  loadOperators: () => Promise<void>;
   setSelectedSchedule: (schedule: ScheduleSummaryResponse | null) => void;
   toggleSeatSelection: (seat: ScheduleSeatResponse) => void;
   clearSeatSelection: () => void;
@@ -63,6 +66,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
   activeBookingDetail: null,
   myPayments: [],
   myPaymentsPage: { totalElements: 0, totalPages: 0, currentPage: 0 },
+  operators: [],
 
   setDepartureCity: (city) => set({ departureCity: city }),
   setArrivalCity: (city) => set({ arrivalCity: city }),
@@ -77,6 +81,16 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     } catch (err) {
       console.warn("Failed to load cities from API:", err);
       set({ cityOptions: [], isLoading: false });
+    }
+  },
+
+  loadOperators: async () => {
+    try {
+      const ops = await bookingService.getOperators();
+      set({ operators: ops });
+    } catch (err) {
+      console.warn("Failed to load operators from API:", err);
+      set({ operators: [] });
     }
   },
 
