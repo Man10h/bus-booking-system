@@ -80,7 +80,7 @@ export interface SeatResponse {
   floor: number;
   row: number;
   col: number;
-  seatType: 'SLEEPER' | 'STANDARD';
+  seatType: 'SLEEPER' | 'STANDARD' | 'BED' | 'SEAT';
   status: 'ACTIVE' | 'INACTIVE';
   isVip: boolean;
 }

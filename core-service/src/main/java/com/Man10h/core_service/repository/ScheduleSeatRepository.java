@@ -3,6 +3,7 @@ package com.Man10h.core_service.repository;
 import com.Man10h.core_service.model.entities.ScheduleSeat;
 import com.Man10h.core_service.model.enums.ScheduleSeatStatus;
 import com.Man10h.core_service.model.enums.ScheduleStatus;
+import com.Man10h.core_service.model.enums.SeatStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
@@ -26,8 +27,29 @@ public interface ScheduleSeatRepository extends JpaRepository<ScheduleSeat, Long
       AND s.id IN :seatIds
 """)
     List<ScheduleSeat> findAllForUpdate(
-            Long scheduleId,
-            List<Long> seatIds
+            @Param("scheduleId") Long scheduleId,
+            @Param("seatIds") List<Long> seatIds
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+    SELECT s.id
+    FROM ScheduleSeat s
+    WHERE s.booking.id = :bookingId
+""")
+    List<Long> findScheduleSeatForUpdateBooking(
+            @Param("bookingId") Long bookingId
+    );
+
+    @Modifying
+    @Query("""
+    UPDATE ScheduleSeat ss
+    SET ss.status = :status
+    WHERE ss.booking.id = :bookingId
+""")
+    void updateScheduleSeatStatusByBooking(
+            @Param("status") ScheduleSeatStatus status,
+            @Param("bookingId") Long bookingId
     );
 
     boolean existsBySeat_IdAndStatusIn(Long seatId, List<ScheduleSeatStatus> seatStatuses);

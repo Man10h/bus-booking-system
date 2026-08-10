@@ -202,7 +202,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     )
     public SchedulePageResponse findSchedules(ScheduleFilter filter, Pageable pageable) {
 
-        Specification<Schedule> spec = Specification.anyOf(
+        Specification<Schedule> spec = Specification.allOf(
                 operator(filter.operatorId()),
                 route(filter.routeId()),
                 routeDepartureCity(filter.departureCityId()),

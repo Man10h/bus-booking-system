@@ -5,4 +5,5 @@
     http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
     <include file="/db/changelog/scripts/create_table.sql"/>
     <include file="/db/changelog/scripts/insert_city.sql"/>
+    <include file="/db/changelog/scripts/seed_core.sql"/>
 </databaseChangeLog>

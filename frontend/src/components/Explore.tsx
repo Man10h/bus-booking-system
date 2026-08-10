@@ -41,7 +41,7 @@ export const Explore: React.FC = () => {
       desc: 'Trung tâm kết nối miền Trung với những cây cầu độc đáo, bãi biển Mỹ Khê trải dài và danh thắng Ngũ Hành Sơn kỳ ảo.',
       bestSeason: 'Tháng 2 - Tháng 8 (Mùa khô)',
       popularRoute: 'Đà Nẵng ⇄ Hội An, Đà Nẵng ⇄ Huế',
-      image: 'https://images.unsplash.com/photo-1559592490-760dc0870f43?auto=format&fit=crop&w=600&q=80'
+      image: '/da_nang.jfif'
     },
     {
       id: 4,
@@ -50,7 +50,7 @@ export const Explore: React.FC = () => {
       desc: 'Di sản Văn hóa Thế giới yên bình với những ngôi nhà cổ sơn vàng, đèn lồng rực rỡ sắc màu về đêm và dòng sông Hoài thơ mộng.',
       bestSeason: 'Tháng 2 - Tháng 4',
       popularRoute: 'Hội An ⇄ Đà Nẵng, Hội An ⇄ Nha Trang',
-      image: 'https://images.unsplash.com/photo-1566838217578-d90231880ec3?auto=format&fit=crop&w=600&q=80'
+      image: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=600&q=80'
     },
     {
       id: 5,

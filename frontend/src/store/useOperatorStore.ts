@@ -213,7 +213,12 @@ export const useOperatorStore = create<OperatorState>((set, get) => ({
   fetchRoutes: async (page, size) => {
     try {
       set({ isLoading: true, error: null });
-      const res = await operatorService.getMyRoutes({ page, size });
+      const profile = get().profile;
+      const res = await operatorService.getMyRoutes({ 
+        page, 
+        size,
+        operatorId: profile?.id
+      });
       set({ 
         routes: res.content,
         routesPage: {
@@ -367,7 +372,12 @@ export const useOperatorStore = create<OperatorState>((set, get) => ({
   fetchSchedules: async (page, size) => {
     try {
       set({ isLoading: true, error: null });
-      const res = await operatorService.getMySchedules({ page, size });
+      const profile = get().profile;
+      const res = await operatorService.getMySchedules({ 
+        page, 
+        size,
+        operatorId: profile?.id
+      });
       set({
         schedules: res.content,
         schedulesPage: {

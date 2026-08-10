@@ -96,10 +96,31 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public LoginResponse getTokenByRefreshToken(String refreshToken) {
-        RefreshToken refreshTokenEntity = refreshTokenRepository.findByTokenAndRevoked(refreshToken, false)
-                .orElseThrow(() -> new RefreshTokenNotFoundException("Refresh token not found"));
+        Optional<RefreshToken> optionalToken = refreshTokenRepository.findByToken(refreshToken);
 
+        if (optionalToken.isEmpty()) {
+            throw new RefreshTokenNotFoundException("Refresh token not found");
+        }
+
+        RefreshToken refreshTokenEntity = optionalToken.get();
+
+        // Security: Reuse Detection - If a revoked token is presented, revoke all user tokens (compromised token protection)
+        if (refreshTokenEntity.getRevoked()) {
+            refreshTokenRepository.revokeAllUserTokens(refreshTokenEntity.getUserId());
+            throw new AuthenticationFailedException("Revoked refresh token detected - all user sessions invalidated");
+        }
+
+        if (refreshTokenEntity.getExpiresAt() != null && refreshTokenEntity.getExpiresAt().isBefore(LocalDateTime.now())) {
+            refreshTokenEntity.setRevoked(true);
+            refreshTokenRepository.save(refreshTokenEntity);
+            throw new RefreshTokenNotFoundException("Refresh token has expired");
+        }
+
+        // Rotate: Revoke the used refresh token
+        refreshTokenEntity.setRevoked(true);
+        refreshTokenRepository.save(refreshTokenEntity);
 
         ServiceTokenRequest request = new ServiceTokenRequest("client_credentials", "auth", "auth", "user.read");
         String token = tokenService.generateAuthServiceToken(request);
@@ -107,11 +128,24 @@ public class AuthServiceImpl implements AuthService {
         ResponseEntity<ApiResponse<UserResponse>> response = userService.getUser(refreshTokenEntity.getUserId(),
                 "Bearer " + token);
 
-        if(!response.getStatusCode().is2xxSuccessful()){
+        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
             throw new AuthenticationFailedException("Service token invalid");
         }
-        UserResponse userResponse =  Objects.requireNonNull(response.getBody()).data();
-        return new LoginResponse(tokenService.generateUserToken(userResponse), refreshToken, "user", 10800000L, 86400000L);
+
+        UserResponse userResponse = response.getBody().data();
+        String newAccessToken = tokenService.generateUserToken(userResponse);
+        String newRefreshToken = tokenService.generateUserRefreshToken(userResponse);
+
+        // Save rotated new refresh token
+        RefreshToken newRefreshTokenDB = RefreshToken.builder()
+                .token(newRefreshToken)
+                .expiresAt(LocalDateTime.now().plusDays(1L))
+                .revoked(false)
+                .userId(userResponse.id())
+                .build();
+        refreshTokenRepository.save(newRefreshTokenDB);
+
+        return new LoginResponse(newAccessToken, newRefreshToken, "user", 10800000L, 86400000L);
     }
 
     @Transactional

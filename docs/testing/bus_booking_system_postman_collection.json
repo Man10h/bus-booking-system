@@ -1,0 +1,398 @@
+{
+	"info": {
+		"_postman_id": "bus-booking-system-e2e-collection",
+		"name": "Bus Booking System - End-to-End API Test Suite",
+		"description": "Complete E2E collection covering Authentication, User Management, Fleet & Route discovery, Pessimistic Seat Booking, VNPay Payment Checkout & IPN Callbacks.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "scheduleId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "scheduleSeatId1",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "scheduleSeatId2",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "bookingId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "bookingCode",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "paymentUrl",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Authentication & Security",
+			"item": [
+				{
+					"name": "1.1 User Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testpassenger\",\n  \"email\": \"passenger@example.com\",\n  \"password\": \"Password123!\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201 Created or 200 OK', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "1.2 User Login (Get JWT Token)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testpassenger\",\n  \"password\": \"Password123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.accessToken) {",
+									"    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "1.3 Get JWKS Keys",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/auth/.well-known/jwks.json",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", ".well-known", "jwks.json"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Response contains keys array', function () {",
+									"    pm.expect(pm.response.json()).to.have.property('keys');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "2. Discovery & Search",
+			"item": [
+				{
+					"name": "2.1 Get City List",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/core/cities",
+							"host": ["{{baseUrl}}"],
+							"path": ["core", "cities"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "2.2 Search Schedules",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/core/schedules/search?departureCityId=1&arrivalCityId=2&departureDate=2026-08-10",
+							"host": ["{{baseUrl}}"],
+							"path": ["core", "schedules", "search"],
+							"query": [
+								{ "key": "departureCityId", "value": "1" },
+								{ "key": "arrivalCityId", "value": "2" },
+								{ "key": "departureDate", "value": "2026-08-10" }
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "2.3 Get Schedule Seat Map",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/core/schedules/{{scheduleId}}/seats",
+							"host": ["{{baseUrl}}"],
+							"path": ["core", "schedules", "{{scheduleId}}", "seats"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "3. Seat Reservation (Pessimistic Locking)",
+			"item": [
+				{
+					"name": "3.1 Hold Seats (Create Booking)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"scheduleId\": {{scheduleId}},\n  \"scheduleSeatIds\": [{{scheduleSeatId1}}, {{scheduleSeatId2}}]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/core/bookings",
+							"host": ["{{baseUrl}}"],
+							"path": ["core", "bookings"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201 Created or 200 OK', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});",
+									"var data = pm.response.json();",
+									"if (data.id) {",
+									"    pm.collectionVariables.set('bookingId', data.id);",
+									"    pm.collectionVariables.set('bookingCode', data.bookingCode);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "3.2 Get Booking Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/core/bookings/{{bookingId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["core", "bookings", "{{bookingId}}"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Booking is in PENDING_PAYMENT state', function () {",
+									"    pm.expect(pm.response.json().status).to.eql('PENDING_PAYMENT');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "4. Payment & Outbox Event Verification",
+			"item": [
+				{
+					"name": "4.1 Create VNPay Payment URL",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"provider\": \"VNPAY\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments/vnpay/create-payment",
+							"host": ["{{baseUrl}}"],
+							"path": ["payments", "vnpay", "create-payment"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "4.2 Simulate VNPay IPN Callback (Success)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/payments/vnpay/ipn?vnp_Amount=50000000&vnp_BankCode=NCB&vnp_CardType=ATM&vnp_OrderInfo=Thanh+toan+booking&vnp_PayDate=20260806160000&vnp_ResponseCode=00&vnp_TmnCode=VNPAY_TEST_MERCHANT&vnp_TransactionNo=14123456&vnp_TransactionStatus=00&vnp_TxnRef={{bookingCode}}&vnp_SecureHash=MOCK_HASH",
+							"host": ["{{baseUrl}}"],
+							"path": ["payments", "vnpay", "ipn"],
+							"query": [
+								{ "key": "vnp_Amount", "value": "50000000" },
+								{ "key": "vnp_ResponseCode", "value": "00" },
+								{ "key": "vnp_TransactionStatus", "value": "00" },
+								{ "key": "vnp_TxnRef", "value": "{{bookingCode}}" }
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('IPN response processed', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

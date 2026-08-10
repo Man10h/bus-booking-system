@@ -47,8 +47,10 @@ export const OperatorSchedules: React.FC = () => {
   };
 
   const handleOpenCreateModal = () => {
-    setRouteId(routes[0]?.id || '');
-    setVehicleId(vehicles[0]?.id || '');
+    const firstActiveRoute = routes.find(r => r.status === 'ACTIVE');
+    const firstActiveVehicle = vehicles.find(v => v.status === 'ACTIVE');
+    setRouteId(firstActiveRoute?.id || '');
+    setVehicleId(firstActiveVehicle?.id || '');
     setDepartureTime('');
     setArrivalTime('');
     setBasePrice('');

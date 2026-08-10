@@ -234,6 +234,7 @@ services:
       SERVICES_CORE_URL: http://core-service:8002/core
       SERVICES_AUTH_URL: http://auth-service:8000/auth
       SPRING_KAFKA_SERVER: kafka:9092
+      PAYMENT_PROVIDERS_VNPAY_RETURN_URL: http://localhost:3000/payment-history
       TZ: Asia/Ho_Chi_Minh
     networks:
       - bus-network
@@ -286,6 +287,8 @@ services:
       EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
       SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
       FRONTEND_URL: http://localhost:3000
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
     networks:
       - bus-network
 

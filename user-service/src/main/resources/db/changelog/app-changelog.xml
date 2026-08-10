@@ -6,4 +6,5 @@
 
     <include file="db/changelog/scripts/create_table.sql"/>
     <include file="db/changelog/scripts/insert_role.sql"/>
+    <include file="db/changelog/scripts/seed_users.sql"/>
 </databaseChangeLog>

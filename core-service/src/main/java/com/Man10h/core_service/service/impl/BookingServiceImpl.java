@@ -218,7 +218,7 @@ public class BookingServiceImpl implements BookingService {
         bookingRepository.save(booking);
     }
 
-    @Cacheable(value = "bookings", key = "T(com.Man10h.core_service.util.CacheKeyUtil).bookingKey(#bookingFilter, #pageable)")
+    @Cacheable(value = "bookings", key = "T(com.Man10h.core_service.util.CacheKeyUtil).bookingKey(#userId, #bookingFilter, #pageable)")
     @Override
     public BookingPageResponse findUserBookingsByFilter(String userId, BookingFilter bookingFilter, Pageable pageable) {
         Specification<Booking> spec = Specification.allOf(
@@ -310,6 +310,9 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new BookingNotFoundException("Booking not found"));
         booking.setStatus(BookingStatus.PAID);
         bookingRepository.save(booking);
+
+        List<Long> scheduleSeatIds = scheduleSeatRepository.findScheduleSeatForUpdateBooking(booking.getId());
+        scheduleSeatRepository.updateScheduleSeatStatusByBooking(ScheduleSeatStatus.BOOKED, bookingId);
     }
 
 

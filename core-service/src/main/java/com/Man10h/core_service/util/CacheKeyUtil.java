@@ -34,9 +34,10 @@ public class CacheKeyUtil {
         );
     }
 
-    public static String bookingKey(BookingFilter filter, Pageable pageable){
+    public static String bookingKey(String userId, BookingFilter filter, Pageable pageable){
         return String.format(
-                "op=%s:dt=%s:at=%s:p=%s",
+                "u=%s:op=%s:dt=%s:at=%s:p=%s",
+                value(userId),
                 value(filter.operatorId()),
                 value(filter.departureTime()),
                 value(filter.arrivalTime()),

@@ -16,6 +16,7 @@ interface BookingState {
   departureCity: CityOption | null;
   arrivalCity: CityOption | null;
   departureDate: string;
+  scheduleStatusFilter: string;
   routes: RouteSummaryResponse[];
   schedules: ScheduleSummaryResponse[];
   cityOptions: CityOption[];
@@ -35,6 +36,7 @@ interface BookingState {
   setDepartureCity: (city: CityOption | null) => void;
   setArrivalCity: (city: CityOption | null) => void;
   setDepartureDate: (date: string) => void;
+  setScheduleStatusFilter: (status: string) => void;
   setMyBookingsFilter: (filter: { operatorId?: string; departureTime?: string; arrivalTime?: string }) => void;
   fetchRoutes: () => Promise<void>;
   fetchSchedules: () => Promise<void>;
@@ -53,6 +55,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
   departureCity: null,
   arrivalCity: null,
   departureDate: '2026-07-25',
+  scheduleStatusFilter: 'OPEN',
   routes: [],
   schedules: [],
   cityOptions: [],
@@ -71,6 +74,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
   setDepartureCity: (city) => set({ departureCity: city }),
   setArrivalCity: (city) => set({ arrivalCity: city }),
   setDepartureDate: (date) => set({ departureDate: date }),
+  setScheduleStatusFilter: (status) => set({ scheduleStatusFilter: status }),
   setMyBookingsFilter: (filter) => set({ myBookingsFilter: filter }),
 
   loadCities: async () => {
@@ -117,6 +121,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       const depId = get().departureCity?.id;
       const arrId = get().arrivalCity?.id;
       const date = get().departureDate;
+      const status = get().scheduleStatusFilter;
       
       // format: yyyy-MM-ddT00:00:00
       const formattedDate = date ? `${date}T00:00:00` : undefined;
@@ -125,6 +130,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
         departureCityId: depId,
         arrivalCityId: arrId,
         departureTime: formattedDate,
+        status: status && status !== 'ALL' ? status : undefined,
         page: 0,
         size: 50
       });

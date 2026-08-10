@@ -108,7 +108,7 @@ public class UserServiceImpl implements UserService {
         try {
             kafkaTemplate.send(topicUserRegisterSuccess, user.getId(), om.writeValueAsString(userVerificationResponse))
                     .whenComplete((res, ex) -> {
-                        if(ex == null){
+                        if(ex != null){
                             throw new GlobalException("Can not send the message");
                         }
                     });
@@ -166,7 +166,7 @@ public class UserServiceImpl implements UserService {
         try {
             kafkaTemplate.send(topicUserRegisterSuccess, user.getId(), om.writeValueAsString(userVerificationResponse))
                     .whenComplete((res, ex) -> {
-                        if(ex == null){
+                        if(ex != null){
                             throw new GlobalException("Can not send the message");
                         }
                     });

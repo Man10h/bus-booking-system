@@ -38,6 +38,7 @@ function App() {
     departureCity,
     arrivalCity,
     departureDate,
+    scheduleStatusFilter,
     routes,
     schedules,
     cityOptions,
@@ -46,6 +47,7 @@ function App() {
     setDepartureCity,
     setArrivalCity,
     setDepartureDate,
+    setScheduleStatusFilter,
     loadCities,
     loadOperators,
     fetchRoutes,
@@ -182,7 +184,7 @@ function App() {
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                     
                     {/* Origin City Dropdown */}
-                    <div className={`${activeTab === 'schedules' ? 'md:col-span-4' : 'md:col-span-5'} space-y-1`}>
+                    <div className={`${activeTab === 'schedules' ? 'md:col-span-3' : 'md:col-span-5'} space-y-1`}>
                       <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Từ</label>
                       <div className="relative">
                         <MapPin className="absolute left-3 top-3 text-gray-400 z-10" size={18} />
@@ -217,7 +219,7 @@ function App() {
                     </div>
  
                     {/* Destination City Dropdown */}
-                    <div className={`${activeTab === 'schedules' ? 'md:col-span-4' : 'md:col-span-5'} space-y-1`}>
+                    <div className={`${activeTab === 'schedules' ? 'md:col-span-3' : 'md:col-span-5'} space-y-1`}>
                       <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Đến</label>
                       <div className="relative">
                         <MapPin className="absolute left-3 top-3 text-gray-400 z-10" size={18} />
@@ -254,6 +256,29 @@ function App() {
                             onChange={(e) => setDepartureDate(e.target.value)}
                             className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2.5 pl-10 text-sm focus:outline-none focus:border-baolau-yellow transition"
                           />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Status Filter */}
+                    {activeTab === 'schedules' && (
+                      <div className="md:col-span-2 space-y-1">
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          Trạng thái
+                        </label>
+                        <div className="relative">
+                          <ListFilter className="absolute left-3 top-3 text-gray-400" size={18} />
+                          <select
+                            value={scheduleStatusFilter}
+                            onChange={(e) => setScheduleStatusFilter(e.target.value)}
+                            className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2.5 pl-10 text-sm focus:outline-none focus:border-baolau-yellow transition cursor-pointer"
+                          >
+                            <option value="ALL">Tất cả</option>
+                            <option value="OPEN">Mở bán</option>
+                            <option value="RUNNING">Đang chạy</option>
+                            <option value="COMPLETED">Hoàn thành</option>
+                            <option value="CANCELLED">Đã hủy</option>
+                          </select>
                         </div>
                       </div>
                     )}

@@ -1,26 +1,79 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Oswald:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&family=Oswald:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-baolau-dark: #1d1d1d;
-  --color-baolau-yellow: #f3a800;
-  --color-baolau-green: #8bc34a;
-  --color-baolau-green-hover: #9ccc65;
-  --color-baolau-cyan: #00bcd4;
-  --color-baolau-light: #eaeaea;
+  --color-baolau-dark: #0f172a;
+  --color-baolau-yellow: #f59e0b;
+  --color-baolau-green: #10b981;
+  --color-baolau-green-hover: #059669;
+  --color-baolau-cyan: #0d9488;
+  --color-baolau-light: #f8fafc;
   
-  --font-oswald: 'Oswald', sans-serif;
+  --font-oswald: 'Oswald', 'Outfit', sans-serif;
   --font-sans: 'Inter', sans-serif;
 }
 
 :root {
   font-family: 'Inter', sans-serif;
-  background-color: #f7f7f7;
-  color: #333333;
+  background-color: #f8fafc;
+  color: #0f172a;
+  color-scheme: light;
 }
 
 body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  overflow-x: hidden;
+  background-color: #f8fafc;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Custom Glassmorphism Utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.glass-dark {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Pulse Glow & Shimmer */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Smooth Focus Ring */
+*:focus-visible {
+  outline: 2px solid #0d9488;
+  outline-offset: 2px;
 }

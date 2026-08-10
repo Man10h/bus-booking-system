@@ -98,7 +98,7 @@ export const operatorService = {
   },
 
   // 2. Routes Management
-  getMyRoutes: async (params: { page: number; size: number }): Promise<RoutePageResponse> => {
+  getMyRoutes: async (params: { page: number; size: number; operatorId?: string }): Promise<RoutePageResponse> => {
     const res = await apiClient.get<ApiResponse<RoutePageResponse>>('/core/routes', { params });
     return res.data.data;
   },
@@ -234,7 +234,7 @@ export const operatorService = {
   },
 
   // 4. Schedules Management
-  getMySchedules: async (params: { page: number; size: number }): Promise<SchedulePageResponse> => {
+  getMySchedules: async (params: { page: number; size: number; operatorId?: string }): Promise<SchedulePageResponse> => {
     const res = await apiClient.get<ApiResponse<SchedulePageResponse>>('/core/schedules', { params });
     return res.data.data;
   },

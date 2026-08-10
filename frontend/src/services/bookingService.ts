@@ -36,6 +36,7 @@ export const bookingService = {
     departureCityId?: number;
     arrivalCityId?: number;
     departureTime?: string; // ISO 8601 string or date
+    status?: string;
     page?: number;
     size?: number;
   }): Promise<SchedulePageResponse> => {

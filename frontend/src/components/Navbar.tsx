@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { authService } from '../services/authService';
-import { User, LogOut, ChevronDown, Globe, BookOpen, Compass, Ticket, Bell, Loader2, ShieldAlert } from 'lucide-react';
+import { User, LogOut, ChevronDown, BookOpen, Compass, Ticket, Bell, Loader2, ShieldAlert } from 'lucide-react';
 import { useNotificationStore } from '../store/useNotificationStore';
 
 interface NavbarProps {
@@ -70,11 +70,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onProfileClick }) 
 
       {/* Right: Actions */}
       <div className="flex items-center space-x-4 md:space-x-6 text-sm">
-        <div className="flex items-center space-x-1 cursor-pointer hover:text-baolau-yellow transition">
-          <Globe size={16} />
-          <span className="hidden sm:inline">Tiếng Việt</span>
-        </div>
-
         {isUser && (
           <Link to="/my-bookings" className="hover:text-baolau-yellow transition hidden sm:inline flex items-center space-x-1">
             <Ticket size={16} />
@@ -217,17 +212,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onProfileClick }) 
                     <User size={16} />
                     <span>Thông tin cá nhân</span>
                   </button>
-
-                  {isAdmin && (
-                    <Link
-                      to="/admin"
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="w-full text-left px-4 py-2 hover:bg-white/5 hover:text-baolau-yellow transition flex items-center space-x-2 cursor-pointer"
-                    >
-                      <ShieldAlert size={16} />
-                      <span>Trang quản trị (Admin)</span>
-                    </Link>
-                  )}
 
                   <div className="border-t border-white/5 my-1"></div>
                   <button

@@ -185,9 +185,8 @@ export const OperatorVehicles: React.FC = () => {
     const { rows, cols } = vType;
     const floorSeats = activeSeats.filter(s => s.floor === floorNum);
 
-    const grid = [];
+    const cells = [];
     for (let r = 1; r <= rows; r++) {
-      const rowCells = [];
       for (let c = 1; c <= cols; c++) {
         const seat = floorSeats.find(s => s.row === r && s.col === c);
         if (seat) {
@@ -203,7 +202,7 @@ export const OperatorVehicles: React.FC = () => {
             seatBg += ' ring-4 ring-offset-2 ring-baolau-dark';
           }
 
-          rowCells.push(
+          cells.push(
             <button
               key={`${r}-${c}`}
               type="button"
@@ -217,20 +216,20 @@ export const OperatorVehicles: React.FC = () => {
             </button>
           );
         } else {
-          // Empty space
-          rowCells.push(<div key={`${r}-${c}`} className="w-12 h-12" />);
+          // Clean Walkway / Empty space
+          cells.push(<div key={`${r}-${c}`} className="w-12 h-12 pointer-events-none select-none" />);
         }
       }
-      grid.push(
-        <div key={r} className="flex justify-center gap-3">
-          {rowCells}
-        </div>
-      );
     }
     return (
       <div className="overflow-auto max-w-full max-h-[480px] p-1">
-        <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100 min-w-max">
-          {grid}
+        <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 min-w-max mx-auto w-fit block">
+          <div 
+            className="grid gap-3 justify-center items-center"
+            style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+          >
+            {cells}
+          </div>
         </div>
       </div>
     );

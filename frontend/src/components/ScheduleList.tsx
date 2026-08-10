@@ -41,6 +41,41 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ schedules }) => {
     return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case 'OPEN':
+        return (
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-green-50 text-green-700 border border-green-200 shrink-0">
+            MỞ BÁN
+          </span>
+        );
+      case 'RUNNING':
+        return (
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+            ĐANG CHẠY
+          </span>
+        );
+      case 'COMPLETED':
+        return (
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-gray-100 text-gray-700 border border-gray-200 shrink-0">
+            HOÀN THÀNH
+          </span>
+        );
+      case 'CANCELLED':
+        return (
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-50 text-red-700 border border-red-200 shrink-0">
+            ĐÃ HỦY
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-gray-50 text-gray-500 border border-gray-200 shrink-0">
+            {status || 'KHOÁ'}
+          </span>
+        );
+    }
+  };
+
   if (schedules.length === 0) {
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-10 text-center space-y-2">
@@ -68,20 +103,25 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ schedules }) => {
             <div className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               
               {/* Operator details */}
-              <div className="flex items-center space-x-3 lg:w-1/5">
+              <div className="flex items-center space-x-3 lg:w-1/4">
                 {operator?.avatarUrl ? (
                   <img 
                     src={operator.avatarUrl} 
                     alt={operator.companyName} 
-                    className="w-10 h-10 rounded-full object-cover border border-gray-100"
+                    className="w-10 h-10 rounded-full object-cover border border-gray-100 shrink-0"
                   />
                 ) : (
-                  <div className="w-10 h-10 bg-baolau-dark/5 text-baolau-dark rounded-full flex items-center justify-center font-bold text-sm">
+                  <div className="w-10 h-10 bg-baolau-dark/5 text-baolau-dark rounded-full flex items-center justify-center font-bold text-sm shrink-0">
                     {(operator?.companyName || 'Nhà Xe').charAt(0)}
                   </div>
                 )}
-                <div>
-                  <h4 className="font-bold text-gray-800 text-sm">{operator?.companyName || 'Nhà Xe Đối Tác'}</h4>
+                <div className="min-w-0 flex-grow">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h4 className="font-bold text-gray-800 text-sm truncate max-w-[120px] lg:max-w-none">
+                      {operator?.companyName || 'Nhà Xe Đối Tác'}
+                    </h4>
+                    {getStatusBadge(schedule.status)}
+                  </div>
                   {operator?.contactPhone && (
                     <p className="text-[10px] text-gray-500 font-semibold mt-0.5">Hotline: {operator.contactPhone}</p>
                   )}
