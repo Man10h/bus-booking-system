@@ -18,7 +18,9 @@ interface BookingState {
   departureDate: string;
   scheduleStatusFilter: string;
   routes: RouteSummaryResponse[];
+  routesPage: { totalElements: number; totalPages: number; currentPage: number };
   schedules: ScheduleSummaryResponse[];
+  schedulesPage: { totalElements: number; totalPages: number; currentPage: number };
   cityOptions: CityOption[];
   isLoading: boolean;
   error: string | null;
@@ -38,8 +40,8 @@ interface BookingState {
   setDepartureDate: (date: string) => void;
   setScheduleStatusFilter: (status: string) => void;
   setMyBookingsFilter: (filter: { operatorId?: string; departureTime?: string; arrivalTime?: string }) => void;
-  fetchRoutes: () => Promise<void>;
-  fetchSchedules: () => Promise<void>;
+  fetchRoutes: (page?: number, size?: number) => Promise<void>;
+  fetchSchedules: (page?: number, size?: number) => Promise<void>;
   loadCities: () => Promise<void>;
   loadOperators: () => Promise<void>;
   setSelectedSchedule: (schedule: ScheduleSummaryResponse | null) => void;
@@ -57,7 +59,9 @@ export const useBookingStore = create<BookingState>((set, get) => ({
   departureDate: '2026-07-25',
   scheduleStatusFilter: 'OPEN',
   routes: [],
+  routesPage: { totalElements: 0, totalPages: 0, currentPage: 0 },
   schedules: [],
+  schedulesPage: { totalElements: 0, totalPages: 0, currentPage: 0 },
   cityOptions: [],
   isLoading: false,
   error: null,
@@ -71,10 +75,10 @@ export const useBookingStore = create<BookingState>((set, get) => ({
   myPaymentsPage: { totalElements: 0, totalPages: 0, currentPage: 0 },
   operators: [],
 
-  setDepartureCity: (city) => set({ departureCity: city }),
-  setArrivalCity: (city) => set({ arrivalCity: city }),
-  setDepartureDate: (date) => set({ departureDate: date }),
-  setScheduleStatusFilter: (status) => set({ scheduleStatusFilter: status }),
+  setDepartureCity: (city) => set({ departureCity: city, routesPage: { ...get().routesPage, currentPage: 0 }, schedulesPage: { ...get().schedulesPage, currentPage: 0 } }),
+  setArrivalCity: (city) => set({ arrivalCity: city, routesPage: { ...get().routesPage, currentPage: 0 }, schedulesPage: { ...get().schedulesPage, currentPage: 0 } }),
+  setDepartureDate: (date) => set({ departureDate: date, schedulesPage: { ...get().schedulesPage, currentPage: 0 } }),
+  setScheduleStatusFilter: (status) => set({ scheduleStatusFilter: status, schedulesPage: { ...get().schedulesPage, currentPage: 0 } }),
   setMyBookingsFilter: (filter) => set({ myBookingsFilter: filter }),
 
   loadCities: async () => {
@@ -98,7 +102,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     }
   },
 
-  fetchRoutes: async () => {
+  fetchRoutes: async (page = 0, size = 10) => {
     try {
       set({ isLoading: true, error: null });
       const depId = get().departureCity?.id;
@@ -106,16 +110,24 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       const response = await bookingService.findRoutes({
         departureCityId: depId,
         arrivalCityId: arrId,
-        page: 0,
-        size: 50
+        page,
+        size
       });
-      set({ routes: response.content, isLoading: false });
+      set({ 
+        routes: response.content, 
+        routesPage: {
+          totalElements: response.totalElements,
+          totalPages: response.totalPages,
+          currentPage: response.page !== undefined ? response.page : page
+        },
+        isLoading: false 
+      });
     } catch (err: any) {
       set({ error: err.message || 'Có lỗi xảy ra khi tải tuyến xe', isLoading: false });
     }
   },
 
-  fetchSchedules: async () => {
+  fetchSchedules: async (page = 0, size = 10) => {
     try {
       set({ isLoading: true, error: null, schedules: [], selectedSchedule: null, selectedSeats: [] });
       const depId = get().departureCity?.id;
@@ -131,10 +143,18 @@ export const useBookingStore = create<BookingState>((set, get) => ({
         arrivalCityId: arrId,
         departureTime: formattedDate,
         status: status && status !== 'ALL' ? status : undefined,
-        page: 0,
-        size: 50
+        page,
+        size
       });
-      set({ schedules: response.content, isLoading: false });
+      set({ 
+        schedules: response.content, 
+        schedulesPage: {
+          totalElements: response.totalElements,
+          totalPages: response.totalPages,
+          currentPage: response.page !== undefined ? response.page : page
+        },
+        isLoading: false 
+      });
     } catch (err: any) {
       set({ error: err.message || 'Có lỗi xảy ra khi tải lịch trình', isLoading: false });
     }

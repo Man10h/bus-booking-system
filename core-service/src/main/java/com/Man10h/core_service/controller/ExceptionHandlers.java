@@ -2,6 +2,10 @@ package com.Man10h.core_service.controller;
 
 import com.Man10h.core_service.controller.exception.*;
 import com.Man10h.core_service.model.response.ErrorResponse;
+import jakarta.persistence.LockTimeoutException;
+import jakarta.persistence.PessimisticLockException;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -186,6 +190,35 @@ public class ExceptionHandlers {
                 new ErrorResponse(
                         HttpStatus.CONFLICT.getReasonPhrase(),
                         HttpStatus.CONFLICT.value(),
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                )
+        );
+    }
+
+    @ExceptionHandler({
+            PessimisticLockingFailureException.class,
+            CannotAcquireLockException.class,
+            LockTimeoutException.class,
+            PessimisticLockException.class
+    })
+    public ResponseEntity<ErrorResponse> handleLockTimeout(Exception ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                new ErrorResponse(
+                        HttpStatus.CONFLICT.getReasonPhrase(),
+                        HttpStatus.CONFLICT.value(),
+                        "Ghế đang được xử lý bởi khách hàng khác. Vui lòng thử lại!",
+                        LocalDateTime.now()
+                )
+        );
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                new ErrorResponse(
+                        HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                        HttpStatus.BAD_REQUEST.value(),
                         ex.getMessage(),
                         LocalDateTime.now()
                 )

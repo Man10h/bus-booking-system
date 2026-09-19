@@ -21,6 +21,11 @@ import java.util.Optional;
 public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpecificationExecutor<Booking> {
 
     @EntityGraph(attributePaths = {
+            "schedule"
+    })
+    Optional<Booking> findById(Long bookingId);
+
+    @EntityGraph(attributePaths = {
             "schedule",
             "scheduleSeatList"
     })

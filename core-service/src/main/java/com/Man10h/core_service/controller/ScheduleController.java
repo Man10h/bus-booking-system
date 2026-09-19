@@ -9,6 +9,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -52,10 +55,8 @@ public class ScheduleController {
     @GetMapping("/schedules")
     public ResponseEntity<ApiResponse<SchedulePageResponse>> findSchedules(
             @ModelAttribute ScheduleFilter scheduleFilter,
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "10") int size
-            ){
-        SchedulePageResponse data = scheduleService.findSchedules(scheduleFilter, PageRequest.of(page, size));
+            @PageableDefault(size = 10, sort = "departureTime", direction = Sort.Direction.ASC) Pageable pageable) {
+        SchedulePageResponse data = scheduleService.findSchedules(scheduleFilter, pageable);
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
     }
 

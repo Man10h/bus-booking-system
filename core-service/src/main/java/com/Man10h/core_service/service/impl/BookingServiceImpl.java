@@ -25,6 +25,9 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +38,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.Man10h.core_service.repository.spec.BookingSpecification.*;
@@ -55,6 +59,28 @@ public class BookingServiceImpl implements BookingService {
     private final VehicleRepository vehicleRepository;
     private final ObjectMapper objectMapper;
     private final KafkaTemplate<String, String> kafkaTemplate;
+    private final StringRedisTemplate stringRedisTemplate;
+
+    public void evictUserBookingCache(String userId) {
+        if (userId != null && !userId.isBlank()) {
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try {
+                    ScanOptions options = ScanOptions.scanOptions().match("bookings::u=" + userId + ":*").count(50).build();
+                    List<String> keys = new ArrayList<>();
+                    try (Cursor<String> cursor = stringRedisTemplate.scan(options)) {
+                        while (cursor.hasNext()) {
+                            keys.add(cursor.next());
+                        }
+                    }
+                    if (!keys.isEmpty()) {
+                        stringRedisTemplate.delete(keys);
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to evict booking cache for user {}: {}", userId, e.getMessage());
+                }
+            });
+        }
+    }
 
     public BookingSummaryResponse toBookingSummaryResponse(Booking booking){
         return new BookingSummaryResponse(
@@ -124,7 +150,6 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Transactional
-    @CacheEvict(value = "bookings", allEntries = true)
     public BookingSummaryResponse createBooking(String userId, CreateBookingRequest request) {
         Optional<Schedule> optionalSchedule = scheduleRepository.findById(request.scheduleId());
         if(optionalSchedule.isEmpty()){
@@ -160,17 +185,19 @@ public class BookingServiceImpl implements BookingService {
                 .totalAmount(totalPrice)
                 .notified(false)
                 .build();
-        for(ScheduleSeat scheduleSeat : scheduleSeatList) {
-            scheduleSeat.setStatus(ScheduleSeatStatus.HELD);
-            scheduleSeat.setBooking(booking);
-            scheduleSeat.setHeldBy(userId);
-            scheduleSeat.setHeldAt(now);
-            scheduleSeat.setExpiredAt(now.plusMinutes(30));
-            scheduleSeatRepository.save(scheduleSeat);
-        }
-        booking.setScheduleSeatList(scheduleSeatList);
 
-        bookingRepository.save(booking);
+        booking = bookingRepository.save(booking);
+
+        scheduleSeatRepository.holdSeatsBatch(
+                ScheduleSeatStatus.HELD,
+                booking,
+                userId,
+                now,
+                now.plusMinutes(30),
+                request.scheduleSeatIds()
+        );
+
+        evictUserBookingCache(userId);
 
         return toBookingSummaryResponse(booking);
     }
@@ -197,7 +224,6 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Transactional
-    @CacheEvict(value = "bookings", allEntries = true)
     public void cancelBooking(String userId, Long bookingId) {
         Booking booking = bookingRepository.getBookingDetailByIdAndUserId(bookingId, userId)
                 .orElseThrow(() -> new BookingNotFoundException("Booking not found"));
@@ -216,6 +242,7 @@ public class BookingServiceImpl implements BookingService {
         });
         booking.getScheduleSeatList().clear();
         bookingRepository.save(booking);
+        evictUserBookingCache(userId);
     }
 
     @Cacheable(value = "bookings", key = "T(com.Man10h.core_service.util.CacheKeyUtil).bookingKey(#userId, #bookingFilter, #pageable)")
@@ -304,7 +331,6 @@ public class BookingServiceImpl implements BookingService {
 
 
     @Transactional
-    @CacheEvict(value = "bookings", allEntries = true)
     public void updateBookingPaidStatus(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new BookingNotFoundException("Booking not found"));
@@ -313,6 +339,11 @@ public class BookingServiceImpl implements BookingService {
 
         List<Long> scheduleSeatIds = scheduleSeatRepository.findScheduleSeatForUpdateBooking(booking.getId());
         scheduleSeatRepository.updateScheduleSeatStatusByBooking(ScheduleSeatStatus.BOOKED, bookingId);
+
+        Schedule schedule = booking.getSchedule();
+        schedule.setAvailableSeats(schedule.getAvailableSeats() - scheduleSeatIds.size());
+        scheduleRepository.save(schedule);
+        evictUserBookingCache(booking.getUserId());
     }
 
 

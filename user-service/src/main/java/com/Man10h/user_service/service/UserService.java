@@ -2,6 +2,7 @@ package com.Man10h.user_service.service;
 
 import com.Man10h.user_service.model.entities.User;
 import com.Man10h.user_service.model.request.ChangePasswordRequest;
+import com.Man10h.user_service.model.request.UserFilter;
 import com.Man10h.user_service.model.request.UserLoginRequest;
 import com.Man10h.user_service.model.request.UserRegisterRequest;
 import com.Man10h.user_service.model.request.UserUpdateRequest;
@@ -19,6 +20,7 @@ public interface UserService {
     public UserResponse updateUser(String userId, UserUpdateRequest request);
     public void changePassword(String userId, ChangePasswordRequest request);
     public Page<UserResponse> findAllUsers(Pageable pageable);
+    public Page<UserResponse> findAllUsers(UserFilter filter, Pageable pageable);
     public void lockUser(String userId);
     public void unlockUser(String userId);
     public void promoteUserToOperator(String userId);

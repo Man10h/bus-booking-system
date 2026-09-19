@@ -23,7 +23,7 @@ services:
 
   # PostgreSQL Database
   db-postgres:
-    image: postgres:16-alpine
+    image: postgres:17
     container_name: db-postgres
     ports:
       - "5432:5432"

@@ -1,16 +1,51 @@
 import React, { useState } from 'react';
 import type { RouteSummaryResponse, RouteStopResponse } from '../types/booking';
+import { useBookingStore } from '../store/useBookingStore';
 import { bookingService } from '../services/bookingService';
-import { MapPin, Navigation, Clock, ChevronDown, ChevronUp, Loader } from 'lucide-react';
+import { 
+  MapPin, 
+  Navigation, 
+  Clock, 
+  ChevronDown, 
+  ChevronUp, 
+  Loader, 
+  ChevronLeft, 
+  ChevronRight 
+} from 'lucide-react';
 
 interface RouteListProps {
   routes: RouteSummaryResponse[];
+  currentPage?: number;
+  totalPages?: number;
+  totalElements?: number;
+  onPageChange?: (page: number) => void;
 }
 
-export const RouteList: React.FC<RouteListProps> = ({ routes }) => {
+export const RouteList: React.FC<RouteListProps> = ({ 
+  routes,
+  currentPage: propCurrentPage,
+  totalPages: propTotalPages,
+  totalElements: propTotalElements,
+  onPageChange
+}) => {
+  const { routesPage, fetchRoutes, isLoading } = useBookingStore();
   const [expandedRouteId, setExpandedRouteId] = useState<number | null>(null);
   const [stops, setStops] = useState<RouteStopResponse[]>([]);
   const [loadingStops, setLoadingStops] = useState(false);
+
+  const currentPage = propCurrentPage !== undefined ? propCurrentPage : routesPage.currentPage;
+  const totalPages = propTotalPages !== undefined ? propTotalPages : routesPage.totalPages;
+  const totalElements = propTotalElements !== undefined ? propTotalElements : routesPage.totalElements;
+
+  const handlePageClick = (newPage: number) => {
+    if (newPage >= 0 && newPage < totalPages) {
+      if (onPageChange) {
+        onPageChange(newPage);
+      } else {
+        fetchRoutes(newPage, 10);
+      }
+    }
+  };
 
   const handleToggleStops = async (routeId: number) => {
     if (expandedRouteId === routeId) {
@@ -98,7 +133,7 @@ export const RouteList: React.FC<RouteListProps> = ({ routes }) => {
               <div className="flex items-center justify-end">
                 <button
                   onClick={() => handleToggleStops(route.id)}
-                  className={`flex items-center space-x-1 px-4 py-2 rounded text-xs font-bold uppercase transition focus:outline-none border ${
+                  className={`flex items-center space-x-1 px-4 py-2 rounded text-xs font-bold uppercase transition focus:outline-none border cursor-pointer ${
                     isExpanded 
                       ? 'bg-baolau-dark text-white border-baolau-dark' 
                       : 'bg-white text-baolau-dark border-gray-300 hover:bg-gray-50'
@@ -175,6 +210,36 @@ export const RouteList: React.FC<RouteListProps> = ({ routes }) => {
           </div>
         );
       })}
+
+      {/* Pagination Footer */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between bg-white border border-gray-100 rounded-lg p-4 text-xs gap-3 shadow-sm">
+          <span className="text-gray-500">
+            Hiển thị trang <strong>{currentPage + 1}</strong> / <strong>{totalPages}</strong> (Tổng cộng <strong>{totalElements}</strong> tuyến xe)
+          </span>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handlePageClick(currentPage - 1)}
+              disabled={currentPage === 0 || isLoading}
+              className="inline-flex items-center space-x-1 px-3 py-1.5 border border-gray-200 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+            >
+              <ChevronLeft size={14} />
+              <span>Trang trước</span>
+            </button>
+            <span className="font-semibold text-gray-700 px-2">
+              Trang {currentPage + 1} / {totalPages}
+            </span>
+            <button
+              onClick={() => handlePageClick(currentPage + 1)}
+              disabled={currentPage === totalPages - 1 || isLoading}
+              className="inline-flex items-center space-x-1 px-3 py-1.5 border border-gray-200 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+            >
+              <span>Trang sau</span>
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -21,16 +21,22 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:Manh2004}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 60
+      minimum-idle: 30
+      connection-timeout: 10000
+      idle-timeout: 300000
+      max-lifetime: 1800000
 
   jpa:
     hibernate:
       ddl-auto: none
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        default_batch_fetch_size: 10
+        default_batch_fetch_size: 20
 
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_SERVER:localhost:9092}

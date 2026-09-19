@@ -10,7 +10,7 @@ public class CacheKeyUtil {
 
     public static String scheduleKey(ScheduleFilter f, Pageable pageable) {
         return String.format(
-                "o=%s:r=%s:dc=%s:ac=%s:dt=%s:at=%s:vt=%s:s=%s:p=%s",
+                "o=%s:r=%s:dc=%s:ac=%s:dt=%s:at=%s:vt=%s:s=%s:p=%s:sz=%s:so=%s",
                 value(f.operatorId()),
                 value(f.routeId()),
                 value(f.departureCityId()),
@@ -19,29 +19,35 @@ public class CacheKeyUtil {
                 value(f.arrivalTime()),
                 value(f.vehicleTypeId()),
                 value(f.status()),
-                pageable.getPageNumber()
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                pageable.getSort().toString()
         );
     }
 
     public static String routeKey(RouteFilter filter, Pageable pageable) {
         return String.format(
-                "dc=%s:ac=%s:op=%s:s=%s:p=%s",
+                "dc=%s:ac=%s:op=%s:s=%s:p=%s:sz=%s:so=%s",
                 value(filter.departureCityId()),
                 value(filter.arrivalCityId()),
                 value(filter.operatorId()),
                 value(filter.status()),
-                pageable.getPageNumber()
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                pageable.getSort().toString()
         );
     }
 
     public static String bookingKey(String userId, BookingFilter filter, Pageable pageable){
         return String.format(
-                "u=%s:op=%s:dt=%s:at=%s:p=%s",
+                "u=%s:op=%s:dt=%s:at=%s:p=%s:sz=%s:so=%s",
                 value(userId),
                 value(filter.operatorId()),
                 value(filter.departureTime()),
                 value(filter.arrivalTime()),
-                pageable.getPageNumber()
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                pageable.getSort().toString()
         );
     }
 

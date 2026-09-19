@@ -6,4 +6,7 @@
     <include file="/db/changelog/scripts/create_table.sql"/>
     <include file="/db/changelog/scripts/insert_city.sql"/>
     <include file="/db/changelog/scripts/seed_core.sql"/>
+    <include file="/db/changelog/scripts/add_vehicle_type_indexes.sql"/>
+    <include file="/db/changelog/scripts/add_route_schedule_search_indexes.sql"/>
+    <include file="/db/changelog/scripts/add_booking_schedule_seat_indexes.sql"/>
 </databaseChangeLog>

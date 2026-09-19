@@ -5,6 +5,7 @@ import com.Man10h.user_service.model.entities.Role;
 import com.Man10h.user_service.model.entities.User;
 import com.Man10h.user_service.model.enums.Gender;
 import com.Man10h.user_service.model.request.ChangePasswordRequest;
+import com.Man10h.user_service.model.request.UserFilter;
 import com.Man10h.user_service.model.request.UserLoginRequest;
 import com.Man10h.user_service.model.request.UserRegisterRequest;
 import com.Man10h.user_service.model.request.UserUpdateRequest;
@@ -12,6 +13,7 @@ import com.Man10h.user_service.model.response.UserResponse;
 import com.Man10h.user_service.model.response.UserVerificationResponse;
 import com.Man10h.user_service.repository.RoleRepository;
 import com.Man10h.user_service.repository.UserRepository;
+import com.Man10h.user_service.repository.spec.UserSpecification;
 import com.Man10h.user_service.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -242,7 +245,25 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Page<UserResponse> findAllUsers(Pageable pageable) {
-        return userRepository.findAll(pageable)
+        return findAllUsers(null, pageable);
+    }
+
+    @Override
+    public Page<UserResponse> findAllUsers(UserFilter filter, Pageable pageable) {
+        if (filter == null) {
+            return userRepository.findAll(pageable)
+                    .map(this::toUserResponse);
+        }
+
+        Specification<User> spec = Specification.allOf(
+                UserSpecification.keyword(filter.keyword()),
+                UserSpecification.roleId(filter.roleId()),
+                UserSpecification.roleName(filter.roleName()),
+                UserSpecification.enabled(filter.enabled()),
+                UserSpecification.gender(filter.gender())
+        );
+
+        return userRepository.findAll(spec, pageable)
                 .map(this::toUserResponse);
     }
 

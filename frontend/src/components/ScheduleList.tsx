@@ -2,14 +2,38 @@ import React from 'react';
 import type { ScheduleSummaryResponse } from '../types/booking';
 import { useBookingStore } from '../store/useBookingStore';
 import { SeatMap } from './SeatMap';
-import { Clock, Award } from 'lucide-react';
+import { Clock, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ScheduleListProps {
   schedules: ScheduleSummaryResponse[];
+  currentPage?: number;
+  totalPages?: number;
+  totalElements?: number;
+  onPageChange?: (page: number) => void;
 }
 
-export const ScheduleList: React.FC<ScheduleListProps> = ({ schedules }) => {
-  const { selectedSchedule, setSelectedSchedule, operators } = useBookingStore();
+export const ScheduleList: React.FC<ScheduleListProps> = ({ 
+  schedules,
+  currentPage: propCurrentPage,
+  totalPages: propTotalPages,
+  totalElements: propTotalElements,
+  onPageChange
+}) => {
+  const { selectedSchedule, setSelectedSchedule, operators, schedulesPage, fetchSchedules, isLoading } = useBookingStore();
+
+  const currentPage = propCurrentPage !== undefined ? propCurrentPage : schedulesPage.currentPage;
+  const totalPages = propTotalPages !== undefined ? propTotalPages : schedulesPage.totalPages;
+  const totalElements = propTotalElements !== undefined ? propTotalElements : schedulesPage.totalElements;
+
+  const handlePageClick = (newPage: number) => {
+    if (newPage >= 0 && newPage < totalPages) {
+      if (onPageChange) {
+        onPageChange(newPage);
+      } else {
+        fetchSchedules(newPage, 10);
+      }
+    }
+  };
 
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
@@ -194,7 +218,7 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ schedules }) => {
               <div className="flex items-center justify-end">
                 <button
                   onClick={() => setSelectedSchedule(isSelected ? null : schedule)}
-                  className={`w-full lg:w-auto px-5 py-2.5 rounded font-bold text-xs uppercase tracking-wider transition ${
+                  className={`w-full lg:w-auto px-5 py-2.5 rounded font-bold text-xs uppercase tracking-wider transition cursor-pointer ${
                     isSelected
                       ? 'bg-baolau-dark text-white shadow-sm'
                       : 'bg-baolau-yellow hover:bg-baolau-yellow/90 text-baolau-dark shadow-sm'
@@ -216,6 +240,36 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ schedules }) => {
           </div>
         );
       })}
+
+      {/* Pagination Footer */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between bg-white border border-gray-100 rounded-lg p-4 text-xs gap-3 shadow-sm">
+          <span className="text-gray-500">
+            Hiển thị trang <strong>{currentPage + 1}</strong> / <strong>{totalPages}</strong> (Tổng cộng <strong>{totalElements}</strong> chuyến xe)
+          </span>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handlePageClick(currentPage - 1)}
+              disabled={currentPage === 0 || isLoading}
+              className="inline-flex items-center space-x-1 px-3 py-1.5 border border-gray-200 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+            >
+              <ChevronLeft size={14} />
+              <span>Trang trước</span>
+            </button>
+            <span className="font-semibold text-gray-700 px-2">
+              Trang {currentPage + 1} / {totalPages}
+            </span>
+            <button
+              onClick={() => handlePageClick(currentPage + 1)}
+              disabled={currentPage === totalPages - 1 || isLoading}
+              className="inline-flex items-center space-x-1 px-3 py-1.5 border border-gray-200 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+            >
+              <span>Trang sau</span>
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

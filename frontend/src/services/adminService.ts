@@ -2,18 +2,44 @@ import apiClient from './apiClient';
 import type { ApiResponse } from '../types/api';
 import type { 
   UserPageResponse, 
+  UserFilterParams,
   ServiceClientResponse, 
   ServiceClientRequest,
   VehicleTypeResponse,
-  VehicleTypeRequest
+  VehicleTypeRequest,
+  VehicleTypePageResponse,
+  VehicleTypeFilterParams
 } from '../types/admin';
 
 export const adminService = {
   // Quản lý người dùng
-  getUsers: async (page: number = 0, size: number = 10): Promise<UserPageResponse> => {
-    const res = await apiClient.get<ApiResponse<UserPageResponse>>('/users', {
-      params: { page, size }
-    });
+  getUsers: async (
+    page: number = 0, 
+    size: number = 10, 
+    filters: UserFilterParams = {}
+  ): Promise<UserPageResponse> => {
+    const params: Record<string, any> = { page, size };
+    if (filters.keyword && filters.keyword.trim() !== '') {
+      params.keyword = filters.keyword.trim();
+    }
+    if (filters.roleId !== undefined && filters.roleId !== null) {
+      params.roleId = filters.roleId;
+    }
+    if (filters.roleName && filters.roleName.trim() !== '') {
+      params.roleName = filters.roleName.trim();
+    }
+    if (filters.enabled !== undefined && filters.enabled !== '') {
+      params.enabled = filters.enabled;
+    }
+    if (filters.gender && filters.gender.trim() !== '') {
+      params.gender = filters.gender.trim();
+    }
+    if (filters.sortBy) {
+      const dir = filters.sortDir || 'desc';
+      params.sort = `${filters.sortBy},${dir}`;
+    }
+
+    const res = await apiClient.get<ApiResponse<UserPageResponse>>('/users', { params });
     return res.data.data;
   },
 
@@ -43,8 +69,32 @@ export const adminService = {
   },
 
   // Quản lý loại xe (Vehicle Type)
-  getVehicleTypes: async (): Promise<VehicleTypeResponse[]> => {
-    const res = await apiClient.get<ApiResponse<VehicleTypeResponse[]>>('/core/vehicleTypes');
+  getVehicleTypes: async (
+    page: number = 0, 
+    size: number = 10, 
+    filters: VehicleTypeFilterParams = {}
+  ): Promise<VehicleTypePageResponse> => {
+    const params: Record<string, any> = { page, size };
+    if (filters.keyword && filters.keyword.trim() !== '') {
+      params.keyword = filters.keyword.trim();
+    }
+    if (filters.seatType && filters.seatType.trim() !== '') {
+      params.seatType = filters.seatType.trim();
+    }
+    if (filters.floors !== undefined && filters.floors !== '') {
+      params.floors = filters.floors;
+    }
+    if (filters.sortBy) {
+      const dir = filters.sortDir || 'asc';
+      params.sort = `${filters.sortBy},${dir}`;
+    }
+
+    const res = await apiClient.get<ApiResponse<VehicleTypePageResponse>>('/core/vehicleTypes', { params });
+    return res.data.data;
+  },
+
+  getAllVehicleTypes: async (): Promise<VehicleTypeResponse[]> => {
+    const res = await apiClient.get<ApiResponse<VehicleTypeResponse[]>>('/core/vehicleTypes/all');
     return res.data.data;
   },
 

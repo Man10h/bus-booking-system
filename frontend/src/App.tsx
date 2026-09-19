@@ -40,7 +40,9 @@ function App() {
     departureDate,
     scheduleStatusFilter,
     routes,
+    routesPage,
     schedules,
+    schedulesPage,
     cityOptions,
     isLoading,
     error,
@@ -111,9 +113,9 @@ function App() {
   const handleSearch = async () => {
     setHasSearched(true);
     if (activeTab === 'schedules') {
-      await fetchSchedules();
+      await fetchSchedules(0, 10);
     } else {
-      await fetchRoutes();
+      await fetchRoutes(0, 10);
     }
   };
 
@@ -339,10 +341,15 @@ function App() {
                     <span>4. Thanh toán</span>
                   </div>
 
-                  <div className="flex justify-between items-center pt-2">
-                    <h2 className="font-oswald text-xl md:text-2xl font-bold uppercase tracking-wider text-gray-800">
-                      {activeTab === 'schedules' ? 'Chuyến xe phù hợp' : 'Các tuyến xe tìm được'}
-                    </h2>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-2 gap-2">
+                    <div className="flex items-center space-x-2.5">
+                      <h2 className="font-oswald text-xl md:text-2xl font-bold uppercase tracking-wider text-gray-800">
+                        {activeTab === 'schedules' ? 'Chuyến xe phù hợp' : 'Các tuyến xe tìm được'}
+                      </h2>
+                      <span className="bg-baolau-cyan/10 text-baolau-cyan font-bold text-xs px-2.5 py-0.5 rounded-full">
+                        {activeTab === 'schedules' ? `${schedulesPage.totalElements} chuyến` : `${routesPage.totalElements} tuyến`}
+                      </span>
+                    </div>
                     <span className="text-xs text-gray-500">
                       Kết quả cho: <strong>{departureCity?.name || 'Mọi nơi'}</strong> → <strong>{arrivalCity?.name || 'Mọi nơi'}</strong>
                     </span>

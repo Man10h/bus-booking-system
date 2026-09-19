@@ -1,18 +1,28 @@
 import { create } from 'zustand';
 import { adminService } from '../services/adminService';
 import type { UserResponse } from '../types/api';
-import type { ServiceClientResponse, VehicleTypeResponse } from '../types/admin';
+import type { 
+  ServiceClientResponse, 
+  VehicleTypeResponse, 
+  UserFilterParams,
+  VehicleTypeFilterParams 
+} from '../types/admin';
 
 interface AdminState {
   users: UserResponse[];
   usersPage: { totalElements: number; totalPages: number; currentPage: number };
+  userFilters: UserFilterParams;
   serviceClients: ServiceClientResponse[];
   vehicleTypes: VehicleTypeResponse[];
+  vehicleTypesPage: { totalElements: number; totalPages: number; currentPage: number };
+  vehicleTypeFilters: VehicleTypeFilterParams;
   isLoading: boolean;
   error: string | null;
 
   // Actions
-  fetchUsers: (page: number, size: number) => Promise<void>;
+  fetchUsers: (page?: number, size?: number, filters?: UserFilterParams) => Promise<void>;
+  setUserFilters: (filters: Partial<UserFilterParams>) => void;
+  resetUserFilters: () => void;
   toggleUserLock: (userId: string) => Promise<void>;
   promoteToOperator: (userId: string) => Promise<void>;
   
@@ -20,7 +30,9 @@ interface AdminState {
   createServiceClient: (request: any) => Promise<void>;
   updateServiceClient: (id: number, request: any) => Promise<void>;
   
-  fetchVehicleTypes: () => Promise<void>;
+  fetchVehicleTypes: (page?: number, size?: number, filters?: VehicleTypeFilterParams) => Promise<void>;
+  setVehicleTypeFilters: (filters: Partial<VehicleTypeFilterParams>) => void;
+  resetVehicleTypeFilters: () => void;
   createVehicleType: (request: any) => Promise<void>;
   updateVehicleType: (id: number, request: any) => Promise<void>;
   deleteVehicleType: (id: number) => Promise<void>;
@@ -29,15 +41,29 @@ interface AdminState {
 export const useAdminStore = create<AdminState>((set, get) => ({
   users: [],
   usersPage: { totalElements: 0, totalPages: 0, currentPage: 0 },
+  userFilters: { keyword: '', roleName: '', enabled: '', sortBy: 'createdAt', sortDir: 'desc' },
   serviceClients: [],
   vehicleTypes: [],
+  vehicleTypesPage: { totalElements: 0, totalPages: 0, currentPage: 0 },
+  vehicleTypeFilters: { keyword: '', seatType: '', floors: '', sortBy: 'id', sortDir: 'asc' },
   isLoading: false,
   error: null,
 
-  fetchUsers: async (page, size) => {
+  setUserFilters: (newFilters) => {
+    set({ userFilters: { ...get().userFilters, ...newFilters } });
+  },
+
+  resetUserFilters: () => {
+    const defaultFilters: UserFilterParams = { keyword: '', roleName: '', enabled: '', sortBy: 'createdAt', sortDir: 'desc' };
+    set({ userFilters: defaultFilters });
+    get().fetchUsers(0, 10, defaultFilters);
+  },
+
+  fetchUsers: async (page = 0, size = 10, filters) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await adminService.getUsers(page, size);
+      const activeFilters = filters !== undefined ? filters : get().userFilters;
+      const data = await adminService.getUsers(page, size, activeFilters);
       set({ 
         users: data.content, 
         usersPage: { 
@@ -114,11 +140,30 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
 
-  fetchVehicleTypes: async () => {
+  setVehicleTypeFilters: (newFilters) => {
+    set({ vehicleTypeFilters: { ...get().vehicleTypeFilters, ...newFilters } });
+  },
+
+  resetVehicleTypeFilters: () => {
+    const defaultFilters: VehicleTypeFilterParams = { keyword: '', seatType: '', floors: '', sortBy: 'id', sortDir: 'asc' };
+    set({ vehicleTypeFilters: defaultFilters });
+    get().fetchVehicleTypes(0, 10, defaultFilters);
+  },
+
+  fetchVehicleTypes: async (page = 0, size = 10, filters) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await adminService.getVehicleTypes();
-      set({ vehicleTypes: data, isLoading: false });
+      const activeFilters = filters !== undefined ? filters : get().vehicleTypeFilters;
+      const data = await adminService.getVehicleTypes(page, size, activeFilters);
+      set({ 
+        vehicleTypes: data.content, 
+        vehicleTypesPage: {
+          totalElements: data.totalElements,
+          totalPages: data.totalPages,
+          currentPage: data.page
+        },
+        isLoading: false 
+      });
     } catch (err: any) {
       set({ error: err.response?.data?.message || err.message || 'Lỗi lấy danh sách Loại xe', isLoading: false });
     }
@@ -127,11 +172,8 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   createVehicleType: async (request) => {
     set({ isLoading: true, error: null });
     try {
-      const newType = await adminService.createVehicleType(request);
-      set({ 
-        vehicleTypes: [...get().vehicleTypes, newType],
-        isLoading: false
-      });
+      await adminService.createVehicleType(request);
+      await get().fetchVehicleTypes(get().vehicleTypesPage.currentPage, 10);
     } catch (err: any) {
       set({ isLoading: false });
       throw new Error(err.response?.data?.message || err.message || 'Lỗi thêm mới Loại xe');
@@ -142,10 +184,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await adminService.updateVehicleType(id, request);
-      set({
-        vehicleTypes: get().vehicleTypes.map(t => t.id === id ? { ...t, ...request } : t),
-        isLoading: false
-      });
+      await get().fetchVehicleTypes(get().vehicleTypesPage.currentPage, 10);
     } catch (err: any) {
       set({ isLoading: false });
       throw new Error(err.response?.data?.message || err.message || 'Lỗi cập nhật Loại xe');
@@ -155,9 +194,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   deleteVehicleType: async (id) => {
     try {
       await adminService.deleteVehicleType(id);
-      set({
-        vehicleTypes: get().vehicleTypes.filter(t => t.id !== id)
-      });
+      await get().fetchVehicleTypes(get().vehicleTypesPage.currentPage, 10);
     } catch (err: any) {
       alert(err.response?.data?.message || err.message || 'Lỗi xóa Loại xe');
     }

@@ -5,6 +5,7 @@ import com.Man10h.core_service.model.enums.ScheduleSeatStatus;
 import com.Man10h.core_service.model.enums.ScheduleStatus;
 import com.Man10h.core_service.model.enums.SeatStatus;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
@@ -20,6 +21,9 @@ public interface ScheduleSeatRepository extends JpaRepository<ScheduleSeat, Long
     public List<ScheduleSeat> findBySchedule_Id(Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints({
+            @QueryHint(name = "jakarta.persistence.lock.timeout", value = "0")
+    })
     @Query("""
     SELECT s
     FROM ScheduleSeat s
@@ -50,6 +54,25 @@ public interface ScheduleSeatRepository extends JpaRepository<ScheduleSeat, Long
     void updateScheduleSeatStatusByBooking(
             @Param("status") ScheduleSeatStatus status,
             @Param("bookingId") Long bookingId
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+    UPDATE ScheduleSeat s
+    SET s.status = :status,
+        s.booking = :booking,
+        s.heldBy = :userId,
+        s.heldAt = :heldAt,
+        s.expiredAt = :expiredAt
+    WHERE s.id IN :seatIds
+""")
+    int holdSeatsBatch(
+            @Param("status") ScheduleSeatStatus status,
+            @Param("booking") com.Man10h.core_service.model.entities.Booking booking,
+            @Param("userId") String userId,
+            @Param("heldAt") LocalDateTime heldAt,
+            @Param("expiredAt") LocalDateTime expiredAt,
+            @Param("seatIds") List<Long> seatIds
     );
 
     boolean existsBySeat_IdAndStatusIn(Long seatId, List<ScheduleSeatStatus> seatStatuses);

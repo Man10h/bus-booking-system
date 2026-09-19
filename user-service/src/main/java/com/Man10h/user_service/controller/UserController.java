@@ -1,9 +1,6 @@
 package com.Man10h.user_service.controller;
 
-import com.Man10h.user_service.model.request.ChangePasswordRequest;
-import com.Man10h.user_service.model.request.UserLoginRequest;
-import com.Man10h.user_service.model.request.UserRegisterRequest;
-import com.Man10h.user_service.model.request.UserUpdateRequest;
+import com.Man10h.user_service.model.request.*;
 import com.Man10h.user_service.model.response.ApiResponse;
 import com.Man10h.user_service.model.response.UserResponse;
 import com.Man10h.user_service.service.UserService;
@@ -11,6 +8,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -86,11 +86,11 @@ public class UserController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping(params = "!email")
+    @GetMapping
     public ResponseEntity<ApiResponse<Page<UserResponse>>> findAllUsers(
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "10") int size) {
-        Page<UserResponse> data = userService.findAllUsers(PageRequest.of(page, size));
+            @ModelAttribute UserFilter filter,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        Page<UserResponse> data = userService.findAllUsers(filter, pageable);
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
     }
 

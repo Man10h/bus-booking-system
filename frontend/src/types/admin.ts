@@ -9,6 +9,16 @@ export interface UserPageResponse {
   size: number;
 }
 
+export interface UserFilterParams {
+  keyword?: string;
+  roleId?: number;
+  roleName?: string;
+  enabled?: boolean | '';
+  gender?: string;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+}
+
 export interface ServiceClientResponse {
   id: number;
   clientId: string;
@@ -40,4 +50,20 @@ export interface VehicleTypeRequest {
   floors: number;
   rows: number;
   cols: number;
+}
+
+export interface VehicleTypePageResponse {
+  content: VehicleTypeResponse[];
+  totalElements: number;
+  totalPages: number;
+  page: number;
+  size: number;
+}
+
+export interface VehicleTypeFilterParams {
+  keyword?: string;
+  seatType?: string;
+  floors?: number | '';
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
 }

@@ -90,7 +90,7 @@ public class RouteServiceImpl implements RouteService {
             key = "T(com.Man10h.core_service.util.CacheKeyUtil).routeKey(#request, #pageable)"
     )
     public RoutePageResponse findRoutes(RouteFilter request, Pageable pageable) {
-        Specification<Route> spec = Specification.anyOf(
+        Specification<Route> spec = Specification.allOf(
                 departureCity(request.departureCityId()),
                 arrivalCity(request.arrivalCityId()),
                 operator(request.operatorId()),

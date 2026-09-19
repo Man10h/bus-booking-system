@@ -229,7 +229,7 @@ export const operatorService = {
   },
 
   getVehicleTypes: async (): Promise<VehicleTypeResponse[]> => {
-    const res = await apiClient.get<ApiResponse<VehicleTypeResponse[]>>('/core/vehicleTypes');
+    const res = await apiClient.get<ApiResponse<VehicleTypeResponse[]>>('/core/vehicleTypes/all');
     return res.data.data;
   },
 

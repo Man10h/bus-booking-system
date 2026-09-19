@@ -1,11 +1,9 @@
 package com.Man10h.core_service.service;
 
-import com.Man10h.core_service.model.request.CreateVehicleRequest;
-import com.Man10h.core_service.model.request.CreateVehicleTypeRequest;
-import com.Man10h.core_service.model.request.UpdateVehicleRequest;
-import com.Man10h.core_service.model.request.UpdateVehicleTypeRequest;
+import com.Man10h.core_service.model.request.*;
 import com.Man10h.core_service.model.response.SeatResponse;
 import com.Man10h.core_service.model.response.VehicleResponse;
+import com.Man10h.core_service.model.response.VehicleTypePageResponse;
 import com.Man10h.core_service.model.response.VehicleTypeResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +20,7 @@ public interface VehicleService {
     public void updateSeatStatus(Long id, String userId, String status);
     public void updateSeatVipStatus(Long id, String userId);
 
+    public VehicleTypePageResponse findVehicleTypes(VehicleTypeFilter filter, Pageable pageable);
     public List<VehicleTypeResponse> getAllVehicleTypes();
     public VehicleTypeResponse createVehicleType(CreateVehicleTypeRequest request);
     public void updateVehicleType(Long id, UpdateVehicleTypeRequest request);

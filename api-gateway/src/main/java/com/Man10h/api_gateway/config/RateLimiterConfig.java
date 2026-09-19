@@ -26,9 +26,9 @@ public class RateLimiterConfig {
 
     @Bean
     public RedisRateLimiter redisRateLimiter() {
-        // replenishRate: 10 requests per second
-        // burstCapacity: 20 maximum tokens
+        // replenishRate: 100 requests per second
+        // burstCapacity: 200 maximum tokens
         // requestedTokens: 1 token per request
-        return new RedisRateLimiter(10, 20, 1);
+        return new RedisRateLimiter(100, 200, 1);
     }
 }

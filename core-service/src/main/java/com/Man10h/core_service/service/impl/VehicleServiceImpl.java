@@ -6,20 +6,16 @@ import com.Man10h.core_service.model.entities.Seat;
 import com.Man10h.core_service.model.entities.Vehicle;
 import com.Man10h.core_service.model.entities.VehicleType;
 import com.Man10h.core_service.model.enums.*;
-import com.Man10h.core_service.model.request.CreateVehicleRequest;
-import com.Man10h.core_service.model.request.CreateVehicleTypeRequest;
-import com.Man10h.core_service.model.request.UpdateVehicleRequest;
-import com.Man10h.core_service.model.request.UpdateVehicleTypeRequest;
-import com.Man10h.core_service.model.response.OperatorResponse;
-import com.Man10h.core_service.model.response.SeatResponse;
-import com.Man10h.core_service.model.response.VehicleResponse;
-import com.Man10h.core_service.model.response.VehicleTypeResponse;
+import com.Man10h.core_service.model.request.*;
+import com.Man10h.core_service.model.response.*;
 import com.Man10h.core_service.repository.*;
+import com.Man10h.core_service.repository.spec.VehicleTypeSpecification;
 import com.Man10h.core_service.service.VehicleService;
 import com.Man10h.core_service.util.SeatGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -257,9 +253,8 @@ public class VehicleServiceImpl implements VehicleService {
         seatRepository.save(seat);
     }
 
-    @Override
-    public List<VehicleTypeResponse> getAllVehicleTypes() {
-        return vehicleTypeRepository.findAll().stream().map(vehicleType -> new VehicleTypeResponse(
+    private VehicleTypeResponse toVehicleTypeResponse(VehicleType vehicleType) {
+        return new VehicleTypeResponse(
                 vehicleType.getId(),
                 vehicleType.getSeatType(),
                 vehicleType.getCode(),
@@ -267,7 +262,36 @@ public class VehicleServiceImpl implements VehicleService {
                 vehicleType.getFloors(),
                 vehicleType.getRows(),
                 vehicleType.getCols()
-        )).collect(Collectors.toList());
+        );
+    }
+
+    @Override
+    public VehicleTypePageResponse findVehicleTypes(VehicleTypeFilter filter, Pageable pageable) {
+        Specification<VehicleType> spec = Specification.allOf(
+                VehicleTypeSpecification.keyword(filter != null ? filter.keyword() : null),
+                VehicleTypeSpecification.seatType(filter != null ? filter.seatType() : null),
+                VehicleTypeSpecification.floors(filter != null ? filter.floors() : null)
+        );
+
+        Page<VehicleType> page = vehicleTypeRepository.findAll(spec, pageable);
+        List<VehicleTypeResponse> content = page.getContent().stream()
+                .map(this::toVehicleTypeResponse)
+                .toList();
+
+        return new VehicleTypePageResponse(
+                content,
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.getNumber(),
+                page.getSize()
+        );
+    }
+
+    @Override
+    public List<VehicleTypeResponse> getAllVehicleTypes() {
+        return vehicleTypeRepository.findAll().stream()
+                .map(this::toVehicleTypeResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
