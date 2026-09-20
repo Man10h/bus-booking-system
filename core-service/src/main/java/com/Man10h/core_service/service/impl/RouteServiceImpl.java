@@ -1,6 +1,7 @@
 package com.Man10h.core_service.service.impl;
 
 import com.Man10h.core_service.controller.exception.*;
+import com.Man10h.core_service.model.entities.City;
 import com.Man10h.core_service.model.entities.Operator;
 import com.Man10h.core_service.model.entities.Route;
 import com.Man10h.core_service.model.entities.RouteStop;
@@ -10,8 +11,8 @@ import com.Man10h.core_service.model.request.*;
 import com.Man10h.core_service.model.response.*;
 import com.Man10h.core_service.repository.*;
 import com.Man10h.core_service.service.RouteService;
+import com.Man10h.core_service.util.TransactionalCacheEvictor;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
+import java.math.BigDecimal;
 import java.util.*;
 
 import static com.Man10h.core_service.repository.spec.RouteSpecification.*;
@@ -33,6 +35,8 @@ public class RouteServiceImpl implements RouteService {
     private final CityRepository cityRepository;
     private final RouteStopRepository routeStopRepository;
     private final ScheduleRepository scheduleRepository;
+    private final TransactionalCacheEvictor transactionalCacheEvictor;
+    private final com.Man10h.core_service.service.MasterDataCacheService masterDataCacheService;
 
     public RouteSummaryResponse toRouteSummaryResponse(Route route) {
         Operator operator = route.getOperator();
@@ -118,27 +122,65 @@ public class RouteServiceImpl implements RouteService {
         return toRouteDetailResponse(route);
     }
 
+    private void preValidateRouteStops(List<CreateRouteStopRequest> routeStops) {
+        if (routeStops == null || routeStops.isEmpty()) {
+            throw new IllegalArgumentException("Danh sách trạm dừng không được để trống");
+        }
+        Set<Long> stopOrders = new HashSet<>();
+        BigDecimal lastDistance = BigDecimal.ZERO;
+        Long lastOffset = 0L;
+
+        for (CreateRouteStopRequest stop : routeStops) {
+            if (stop.stopOrder() == null || stop.stopOrder() < 1) {
+                throw new IllegalArgumentException("Thứ tự trạm dừng (stopOrder) phải lớn hơn hoặc bằng 1");
+            }
+            if (!stopOrders.add(stop.stopOrder())) {
+                throw new IllegalArgumentException("Thứ tự trạm dừng (stopOrder) bị trùng lặp: " + stop.stopOrder());
+            }
+            if (stop.distanceFromStart() != null && stop.distanceFromStart().compareTo(lastDistance) < 0) {
+                throw new IllegalArgumentException("Khoảng cách trạm dừng (distanceFromStart) phải tăng dần theo lộ trình");
+            }
+            if (stop.distanceFromStart() != null) {
+                lastDistance = stop.distanceFromStart();
+            }
+            if (stop.estimatedArrivalOffsetMinutes() != null && stop.estimatedArrivalOffsetMinutes() < lastOffset) {
+                throw new IllegalArgumentException("Thời gian ước tính (estimatedArrivalOffsetMinutes) phải tăng dần theo lộ trình");
+            }
+            if (stop.estimatedArrivalOffsetMinutes() != null) {
+                lastOffset = stop.estimatedArrivalOffsetMinutes();
+            }
+        }
+    }
+
     @Transactional
-    @CacheEvict(value = "routes", allEntries = true)
     public RouteDetailResponse createRoute(String userId, CreateRouteRequest request) {
+        preValidateRouteStops(request.routeStops());
+
         if(routeRepository.existsByRouteCode(request.routeCode())){
             throw new RouteCodeAlreadyExistsException("Route code already exists");
         }
-        Optional<Operator> optionalOperator = operatorRepository.findByUserId(userId);
+        Optional<Operator> optionalOperator = masterDataCacheService.getOperatorByUserId(userId);
         if(optionalOperator.isEmpty()){
             throw new OperatorNotFoundException("Operator not found");
         }
         Operator operator = optionalOperator.get();
-        if(!cityRepository.existsById(request.arrivalCityId())){
-            throw new CityNotFoundException("Arrival City not found");
+
+        // Batch fetch and validate all cities from in-memory cache / batch DB lookup
+        Set<Long> requiredCityIds = new HashSet<>();
+        requiredCityIds.add(request.departureCityId());
+        requiredCityIds.add(request.arrivalCityId());
+        for (CreateRouteStopRequest stop : request.routeStops()) {
+            requiredCityIds.add(stop.cityId());
         }
-        if(!cityRepository.existsById(request.departureCityId())){
-            throw new CityNotFoundException("Departure City not found");
+
+        Map<Long, City> cityMap = masterDataCacheService.getCitiesByIds(requiredCityIds);
+        if (cityMap.size() != requiredCityIds.size()) {
+            throw new CityNotFoundException("Một hoặc nhiều thành phố/trạm dừng không tồn tại");
         }
 
         Route route = Route.builder()
-                .arrivalCity(cityRepository.getReferenceById(request.arrivalCityId()))
-                .departureCity(cityRepository.getReferenceById(request.departureCityId()))
+                .arrivalCity(cityMap.get(request.arrivalCityId()))
+                .departureCity(cityMap.get(request.departureCityId()))
                 .operator(operator)
                 .routeCode(request.routeCode())
                 .distance(request.distance())
@@ -149,12 +191,9 @@ public class RouteServiceImpl implements RouteService {
 
 
         for(CreateRouteStopRequest createRouteStopRequest: request.routeStops()){
-            if(!cityRepository.existsById(createRouteStopRequest.cityId())){
-                throw new CityNotFoundException("City stop not found");
-            }
             RouteStop routeStop = RouteStop.builder()
                     .route(route)
-                    .city(cityRepository.getReferenceById(createRouteStopRequest.cityId()))
+                    .city(cityMap.get(createRouteStopRequest.cityId()))
                     .stopName(createRouteStopRequest.stopName())
                     .stopOrder(createRouteStopRequest.stopOrder())
                     .distanceFromStart(createRouteStopRequest.distanceFromStart())
@@ -166,11 +205,12 @@ public class RouteServiceImpl implements RouteService {
         }
         routeRepository.save(route);
 
+        transactionalCacheEvictor.evictAfterCommit("routes");
+
         return toRouteDetailResponse(route);
     }
 
     @Transactional
-    @CacheEvict(value = "routes", allEntries = true)
     public RouteDetailResponse updateRoute(Long id, String userId, UpdateRouteRequest request) {
         Optional<Route> optional = routeRepository.getDetailById(id);
         if(optional.isEmpty()){
@@ -211,11 +251,13 @@ public class RouteServiceImpl implements RouteService {
 
         }
         routeRepository.save(route);
+
+        transactionalCacheEvictor.evictAfterCommit("routes");
+
         return toRouteDetailResponse(route);
     }
 
     @Transactional
-    @CacheEvict(value = "routes", allEntries = true)
     public void deactivateRoute(String userId, Long id) {
         Optional<Route> optional = routeRepository.getDetailById(id);
         if(optional.isEmpty()){
@@ -234,10 +276,11 @@ public class RouteServiceImpl implements RouteService {
         route.setStatus(RouteStatus.INACTIVE);
 
         routeRepository.save(route);
+
+        transactionalCacheEvictor.evictAfterCommit("routes");
     }
 
     @Transactional
-    @CacheEvict(value = "routes", allEntries = true)
     public void activeRoute(String userId, Long id) {
         Optional<Route> optional = routeRepository.getDetailById(id);
         if(optional.isEmpty()){
@@ -252,5 +295,7 @@ public class RouteServiceImpl implements RouteService {
         }
         route.setStatus(RouteStatus.ACTIVE);
         routeRepository.save(route);
+
+        transactionalCacheEvictor.evictAfterCommit("routes");
     }
 }

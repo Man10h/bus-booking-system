@@ -18,7 +18,8 @@ import java.util.Set;
 @NoArgsConstructor
 public class Route {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "route_seq_gen")
+    @SequenceGenerator(name = "route_seq_gen", sequenceName = "route_id_seq", allocationSize = 50)
     private Long id;
 
     @Column(name = "route_code", nullable = false, unique = true)

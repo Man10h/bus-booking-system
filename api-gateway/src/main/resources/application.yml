@@ -5,6 +5,19 @@ spring:
   cloud:
     config:
       enabled: false
+    gateway:
+      httpclient:
+        pool:
+          type: ELASTIC
+          max-idle-time: 15s
+          max-connections: 1000
+      server:
+        webflux:
+          httpclient:
+            pool:
+              type: ELASTIC
+              max-idle-time: 15s
+              max-connections: 1000
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
@@ -24,7 +37,8 @@ eureka:
 
 logging:
   level:
-    org.springframework.security: TRACE
+    root: INFO
+    org.springframework.security: INFO
 
 frontend:
   url: ${FRONTEND_URL:http://localhost:3000}

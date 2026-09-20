@@ -9,16 +9,18 @@ import com.Man10h.core_service.model.request.UpdateScheduleRequest;
 import com.Man10h.core_service.model.response.*;
 import com.Man10h.core_service.repository.*;
 import com.Man10h.core_service.service.ScheduleService;
+import com.Man10h.core_service.util.TransactionalCacheEvictor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +40,8 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final ScheduleSeatRepository scheduleSeatRepository;
     private final OperatorRepository operatorRepository;
     private final BookingRepository bookingRepository;
+    private final TransactionalCacheEvictor transactionalCacheEvictor;
+    private final StringRedisTemplate stringRedisTemplate;
 
     public VehicleResponse toVehicleResponse(Vehicle vehicle) {
         VehicleType vehicleType = vehicle.getVehicleType();
@@ -133,66 +137,81 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Transactional
-    @CacheEvict(value = "schedules", allEntries = true)
     public ScheduleDetailResponse createSchedule(String userId, CreateScheduleRequest request) {
         if (!request.departureTime().isBefore(request.arrivalTime())) {
             throw new IllegalArgumentException("Departure time must be before arrival time");
         }
-        Optional<Route> optionalRoute = routeRepository.getDetailById(request.routeId());
-        if(optionalRoute.isEmpty()){
-            throw new RouteNotFoundException("Route Not Found");
-        }
-        Optional<Vehicle> optionalVehicle = vehicleRepository.getDetailWithSeatsById(request.vehicleId());
-        if(optionalVehicle.isEmpty()){
-            throw new VehicleNotFoundException("Vehicle Not Found");
-        }
-        Route route = optionalRoute.get();
-        Vehicle vehicle = optionalVehicle.get();
-        if(route.getStatus() != RouteStatus.ACTIVE){
-            throw new IllegalStateException("Route Status is not active");
-        }
-        if(vehicle.getStatus() != VehicleStatus.ACTIVE){
-            throw new IllegalStateException("Vehicle Status is not active");
-        }
-        if(!vehicle.getOperator().getUserId().equals(userId) || !route.getOperator().getUserId().equals(userId)){
-            throw new AccessDeniedException("You not owned the vehicle or the route");
-        }
-        if(scheduleRepository.existsOverlappingSchedule(request.vehicleId(), request.departureTime(), request.arrivalTime())){
-            throw new IllegalStateException(
-                    "Vehicle already has a schedule in this time range");
-        }
-        Schedule schedule = Schedule.builder()
-                .route(route)
-                .vehicle(vehicle)
-                .operatorId(route.getOperator().getId())
-                .arrivalTime(request.arrivalTime())
-                .departureTime(request.departureTime())
-                .basePrice(request.basePrice())
-                .bookingList(new ArrayList<>())
-                .scheduleSeatList(new ArrayList<>())
-                .status(ScheduleStatus.OPEN)
-                .vipPrice(request.vipPrice())
-                .totalSeats(vehicle.getTotalSeats())
-                .build();
 
+        String lockKey = "lock:vehicle_schedule:" + request.vehicleId();
+        Boolean locked = stringRedisTemplate.opsForValue()
+                .setIfAbsent(lockKey, "LOCKED", Duration.ofSeconds(5));
 
-        List<ScheduleSeat> scheduleSeatList = new ArrayList<>();
-        for(Seat seat: vehicle.getVehicleSeatList()){
-            if(!seat.getStatus().equals(SeatStatus.INACTIVE)){
-                ScheduleSeat scheduleSeat = ScheduleSeat.builder()
-                        .seat(seat)
-                        .schedule(schedule)
-                        .price(seat.getIsVip() ? request.vipPrice() : request.basePrice())
-                        .status(ScheduleSeatStatus.AVAILABLE)
-                        .build();
+        if (Boolean.FALSE.equals(locked)) {
+            throw new IllegalStateException("Hệ thống đang xếp lịch cho xe này, vui lòng không thao tác lặp lại!");
+        }
 
-                scheduleSeatList.add(scheduleSeat);
+        try {
+            Optional<Route> optionalRoute = routeRepository.getDetailById(request.routeId());
+            if(optionalRoute.isEmpty()){
+                throw new RouteNotFoundException("Route Not Found");
             }
+            Optional<Vehicle> optionalVehicle = vehicleRepository.getDetailWithSeatsById(request.vehicleId());
+            if(optionalVehicle.isEmpty()){
+                throw new VehicleNotFoundException("Vehicle Not Found");
+            }
+            Route route = optionalRoute.get();
+            Vehicle vehicle = optionalVehicle.get();
+            if(route.getStatus() != RouteStatus.ACTIVE){
+                throw new IllegalStateException("Route Status is not active");
+            }
+            if(vehicle.getStatus() != VehicleStatus.ACTIVE){
+                throw new IllegalStateException("Vehicle Status is not active");
+            }
+            if(!vehicle.getOperator().getUserId().equals(userId) || !route.getOperator().getUserId().equals(userId)){
+                throw new AccessDeniedException("You not owned the vehicle or the route");
+            }
+            if(scheduleRepository.existsOverlappingSchedule(request.vehicleId(), request.departureTime(), request.arrivalTime())){
+                throw new IllegalStateException(
+                        "Vehicle already has a schedule in this time range");
+            }
+            Schedule schedule = Schedule.builder()
+                    .route(route)
+                    .vehicle(vehicle)
+                    .operatorId(route.getOperator().getId())
+                    .arrivalTime(request.arrivalTime())
+                    .departureTime(request.departureTime())
+                    .basePrice(request.basePrice())
+                    .bookingList(new ArrayList<>())
+                    .scheduleSeatList(new ArrayList<>())
+                    .status(ScheduleStatus.OPEN)
+                    .vipPrice(request.vipPrice())
+                    .totalSeats(vehicle.getTotalSeats())
+                    .build();
+
+
+            List<ScheduleSeat> scheduleSeatList = new ArrayList<>();
+            for(Seat seat: vehicle.getVehicleSeatList()){
+                if(!seat.getStatus().equals(SeatStatus.INACTIVE)){
+                    ScheduleSeat scheduleSeat = ScheduleSeat.builder()
+                            .seat(seat)
+                            .schedule(schedule)
+                            .price(seat.getIsVip() ? request.vipPrice() : request.basePrice())
+                            .status(ScheduleSeatStatus.AVAILABLE)
+                            .build();
+
+                    scheduleSeatList.add(scheduleSeat);
+                }
+            }
+            schedule.setAvailableSeats((long) scheduleSeatList.size());
+            schedule.setScheduleSeatList(scheduleSeatList);
+            scheduleRepository.save(schedule);
+
+            transactionalCacheEvictor.evictAfterCommit("schedules");
+
+            return toDetailResponse(schedule);
+        } finally {
+            stringRedisTemplate.delete(lockKey);
         }
-        schedule.setAvailableSeats((long) scheduleSeatList.size());
-        schedule.setScheduleSeatList(scheduleSeatList);
-        scheduleRepository.save(schedule);
-        return toDetailResponse(schedule);
     }
 
     @Override
@@ -258,7 +277,6 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Transactional
-    @CacheEvict(value = "schedules", allEntries = true)
     public void cancelSchedule(String userId, Long id) {
         Schedule schedule = scheduleRepository.findById(id).orElseThrow(() -> new ScheduleNotFoundException("Schedule not found"));
         Operator operator = operatorRepository.findByUserId(userId).orElseThrow(() -> new OperatorNotFoundException("Operator not found"));
@@ -275,10 +293,11 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
         schedule.setStatus(ScheduleStatus.CANCELLED);
         scheduleRepository.save(schedule);
+
+        transactionalCacheEvictor.evictAfterCommit("schedules");
     }
 
     @Transactional
-    @CacheEvict(value = "schedules", allEntries = true)
     public void updateSchedule(Long id, String userId, UpdateScheduleRequest request) {
         if (!request.departureTime().isBefore(request.arrivalTime())) {
             throw new IllegalArgumentException("Departure time must be before arrival time");
@@ -314,6 +333,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         schedule.setVipPrice(request.vipPrice());
         scheduleRepository.save(schedule);
 
+        transactionalCacheEvictor.evictAfterCommit("schedules");
     }
 
     @Transactional

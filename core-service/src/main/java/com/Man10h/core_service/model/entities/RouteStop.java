@@ -21,7 +21,8 @@ import java.math.BigDecimal;
 )
 public class RouteStop {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "route_stop_seq_gen")
+    @SequenceGenerator(name = "route_stop_seq_gen", sequenceName = "route_stop_id_seq", allocationSize = 50)
     private Long id;
 
     @Column(name = "stop_order")

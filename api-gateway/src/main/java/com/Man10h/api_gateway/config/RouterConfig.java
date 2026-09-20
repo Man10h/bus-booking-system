@@ -25,31 +25,31 @@ public class RouterConfig {
                         r -> r
                                 .path("/auth/**")
                                 .filters(f -> f.requestRateLimiter(c -> c.setRateLimiter(redisRateLimiter).setKeyResolver(ipKeyResolver)))
-                                .uri("lb://auth-service:8000")
+                                .uri("lb://auth-service")
                 )
                 .route("user-service",
                         r -> r
                                 .path("/users/**")
                                 .filters(f -> f.requestRateLimiter(c -> c.setRateLimiter(redisRateLimiter).setKeyResolver(ipKeyResolver)))
-                                .uri("lb://user-service:8001")
+                                .uri("lb://user-service")
                 )
                 .route("core-service",
                         r -> r
                                 .path("/core/**")
                                 .filters(f -> f.requestRateLimiter(c -> c.setRateLimiter(redisRateLimiter).setKeyResolver(ipKeyResolver)))
-                                .uri("lb://core-service:8002")
+                                .uri("lb://core-service")
                 )
                 .route("payment-service",
                         r -> r
                                 .path("/payments/**")
                                 .filters(f -> f.requestRateLimiter(c -> c.setRateLimiter(redisRateLimiter).setKeyResolver(ipKeyResolver)))
-                                .uri("lb://payment-service:8003")
+                                .uri("lb://payment-service")
                 )
                 .route("notification-service",
                         r -> r
                                 .path("/notifications/**")
                                 .filters(f -> f.requestRateLimiter(c -> c.setRateLimiter(redisRateLimiter).setKeyResolver(ipKeyResolver)))
-                                .uri("lb://notification-service:8004")
+                                .uri("lb://notification-service")
                 )
                 .build();
     }

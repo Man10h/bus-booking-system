@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 public class OperatorServiceImpl implements OperatorService {
 
     private final OperatorRepository operatorRepository;
+    private final com.Man10h.core_service.service.MasterDataCacheService masterDataCacheService;
 
     @Transactional
     public OperatorResponse createOperator(String userId, CreateOperatorRequest request) {
@@ -57,6 +58,7 @@ public class OperatorServiceImpl implements OperatorService {
         operator.setTaxCode(request.taxCode());
         operator.setAvatarUrl(request.avatarUrl());
         operatorRepository.save(operator);
+        masterDataCacheService.evictOperator(userId);
     }
 
     @Override

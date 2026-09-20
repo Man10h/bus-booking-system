@@ -38,6 +38,8 @@ public interface RouteRepository extends JpaRepository<Route, Long>, JpaSpecific
 
     public Boolean existsByRouteCode(String routeCode);
 
+    boolean existsByOperator_IdAndDepartureCity_IdAndArrivalCity_IdAndStatus(String operatorId, Long departureCityId, Long arrivalCityId, RouteStatus status);
+
     @Query("""
     SELECT COUNT(r) FROM Route r WHERE r.operator.id = :operatorId AND r.status = :status
 """)

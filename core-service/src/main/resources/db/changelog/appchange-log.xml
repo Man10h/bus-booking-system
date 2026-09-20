@@ -9,4 +9,6 @@
     <include file="/db/changelog/scripts/add_vehicle_type_indexes.sql"/>
     <include file="/db/changelog/scripts/add_route_schedule_search_indexes.sql"/>
     <include file="/db/changelog/scripts/add_booking_schedule_seat_indexes.sql"/>
+    <include file="/db/changelog/scripts/add_route_schedule_concurrency_constraints.sql"/>
+    <include file="/db/changelog/scripts/add_route_sequences.sql"/>
 </databaseChangeLog>

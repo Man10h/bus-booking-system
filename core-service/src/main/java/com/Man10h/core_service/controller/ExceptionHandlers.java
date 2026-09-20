@@ -5,6 +5,7 @@ import com.Man10h.core_service.model.response.ErrorResponse;
 import jakarta.persistence.LockTimeoutException;
 import jakarta.persistence.PessimisticLockException;
 import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -220,6 +221,29 @@ public class ExceptionHandlers {
                         HttpStatus.BAD_REQUEST.getReasonPhrase(),
                         HttpStatus.BAD_REQUEST.value(),
                         ex.getMessage(),
+                        LocalDateTime.now()
+                )
+        );
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        String message = "Dữ liệu bị trùng lặp hoặc vi phạm ràng buộc hệ thống.";
+        String detailedMessage = ex.getMessage() != null ? ex.getMessage() : "";
+
+        if (detailedMessage.contains("no_overlapping_vehicle_schedule")) {
+            message = "Xe này đã có lịch trình trong khoảng thời gian đã chọn. Vui lòng chọn khung giờ khác!";
+        } else if (detailedMessage.contains("route_code")) {
+            message = "Mã tuyến đường này đã tồn tại trong hệ thống. Vui lòng chọn mã khác!";
+        } else if (detailedMessage.contains("uq_operator_active_route")) {
+            message = "Nhà xe đã có một tuyến đường đang hoạt động cho chặng này!";
+        }
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                new ErrorResponse(
+                        HttpStatus.CONFLICT.getReasonPhrase(),
+                        HttpStatus.CONFLICT.value(),
+                        message,
                         LocalDateTime.now()
                 )
         );

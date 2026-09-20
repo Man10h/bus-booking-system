@@ -266,6 +266,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Cacheable(value = "operator_stats", key = "#userId")
     public StatisticalOverviewResponse getStatisticalOverview(String userId) {
         Operator operator = operatorRepository.findByUserId(userId)
                         .orElseThrow(() -> new OperatorNotFoundException("Operator not found"));
