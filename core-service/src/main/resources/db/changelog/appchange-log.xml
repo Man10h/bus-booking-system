@@ -11,4 +11,5 @@
     <include file="/db/changelog/scripts/add_booking_schedule_seat_indexes.sql"/>
     <include file="/db/changelog/scripts/add_route_schedule_concurrency_constraints.sql"/>
     <include file="/db/changelog/scripts/add_route_sequences.sql"/>
+    <include file="/db/changelog/scripts/add_route_version_columns.sql"/>
 </databaseChangeLog>

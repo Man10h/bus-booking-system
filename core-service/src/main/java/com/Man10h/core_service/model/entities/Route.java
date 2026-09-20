@@ -22,6 +22,10 @@ public class Route {
     @SequenceGenerator(name = "route_seq_gen", sequenceName = "route_id_seq", allocationSize = 50)
     private Long id;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
+
     @Column(name = "route_code", nullable = false, unique = true)
     private String routeCode;
 

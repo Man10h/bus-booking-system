@@ -50,6 +50,7 @@ export const OperatorRoutes: React.FC = () => {
   const [estimatedDurationMinutes, setEstimatedDurationMinutes] = useState<number | ''>('');
   const [stops, setStops] = useState<StopInput[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchRoutes(0, 10);
@@ -146,6 +147,7 @@ export const OperatorRoutes: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setFormError(null);
 
     if (!routeCode || !departureCityId || !arrivalCityId || !distance || !estimatedDurationMinutes) {
@@ -171,6 +173,7 @@ export const OperatorRoutes: React.FC = () => {
       }))
     };
 
+    setIsSubmitting(true);
     try {
       if (editingRouteId !== null) {
         await updateRoute(editingRouteId, payload);
@@ -179,7 +182,13 @@ export const OperatorRoutes: React.FC = () => {
       }
       setIsModalOpen(false);
     } catch (err: any) {
-      setFormError(err.message || 'Có lỗi xảy ra khi lưu tuyến đường.');
+      const errorMsg = err.response?.data?.message || err.message || 'Có lỗi xảy ra khi lưu tuyến đường.';
+      setFormError(errorMsg);
+      if (err.response?.status === 409 || errorMsg.includes('phiên làm việc khác')) {
+        fetchRoutes(routesPage.currentPage, 10);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -536,15 +545,15 @@ export const OperatorRoutes: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading}
-                  className="bg-baolau-cyan hover:bg-baolau-cyan/90 text-white font-bold text-xs uppercase tracking-wider px-5 py-2 rounded shadow transition flex items-center space-x-1.5"
+                  disabled={isLoading || isSubmitting}
+                  className="bg-baolau-cyan hover:bg-baolau-cyan/90 text-white font-bold text-xs uppercase tracking-wider px-5 py-2 rounded shadow transition flex items-center space-x-1.5 disabled:opacity-50"
                 >
-                  {isLoading ? (
+                  {isLoading || isSubmitting ? (
                     <Loader2 className="animate-spin" size={14} />
                   ) : (
                     <Save size={14} />
                   )}
-                  <span>Lưu lại</span>
+                  <span>{isSubmitting ? 'Đang lưu...' : 'Lưu lại'}</span>
                 </button>
               </div>
             </form>

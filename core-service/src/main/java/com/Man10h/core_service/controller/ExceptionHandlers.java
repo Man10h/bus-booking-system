@@ -248,4 +248,16 @@ public class ExceptionHandlers {
                 )
         );
     }
+
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLockingFailure(org.springframework.orm.ObjectOptimisticLockingFailureException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                new ErrorResponse(
+                        HttpStatus.CONFLICT.getReasonPhrase(),
+                        HttpStatus.CONFLICT.value(),
+                        "Dữ liệu tuyến đường đã được thay đổi bởi một phiên làm việc khác. Vui lòng tải lại trang!",
+                        LocalDateTime.now()
+                )
+        );
+    }
 }

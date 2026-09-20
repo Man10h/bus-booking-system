@@ -25,6 +25,10 @@ public class RouteStop {
     @SequenceGenerator(name = "route_stop_seq_gen", sequenceName = "route_stop_id_seq", allocationSize = 50)
     private Long id;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
+
     @Column(name = "stop_order")
     private Long stopOrder;
 

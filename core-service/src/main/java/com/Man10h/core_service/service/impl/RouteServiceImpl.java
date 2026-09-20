@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.Man10h.core_service.repository.spec.RouteSpecification.*;
 
@@ -219,36 +220,58 @@ public class RouteServiceImpl implements RouteService {
         if(!optional.get().getOperator().getUserId().equals(userId)){
             throw new AccessDeniedException("You don't own this route");
         }
-        if(!cityRepository.existsById(request.arrivalCityId())){
-            throw new CityNotFoundException("Arrival City not found");
+        if (scheduleRepository.existsByRoute_IdAndStatusIn(id, List.of(ScheduleStatus.OPEN, ScheduleStatus.RUNNING))) {
+            throw new IllegalStateException("Không thể sửa đổi lộ trình của tuyến xe đang có chuyến chạy (OPEN hoặc RUNNING).");
         }
-        if(!cityRepository.existsById(request.departureCityId())){
+
+        Set<Long> requiredCityIds = new HashSet<>();
+        requiredCityIds.add(request.departureCityId());
+        requiredCityIds.add(request.arrivalCityId());
+        if (request.routeStops() != null) {
+            for (UpdateRouteStopRequest stop : request.routeStops()) {
+                requiredCityIds.add(stop.cityId());
+            }
+        }
+        Map<Long, City> cityMap = masterDataCacheService.getCitiesByIds(requiredCityIds);
+        if (!cityMap.containsKey(request.departureCityId())) {
             throw new CityNotFoundException("Departure City not found");
         }
+        if (!cityMap.containsKey(request.arrivalCityId())) {
+            throw new CityNotFoundException("Arrival City not found");
+        }
+
         Route route = optional.get();
         route.setRouteCode(request.routeCode());
         route.setDistance(request.distance());
         route.setEstimatedDurationMinutes(request.estimatedDurationMinutes());
-        route.setArrivalCity(cityRepository.getReferenceById(request.arrivalCityId()));
-        route.setDepartureCity(cityRepository.getReferenceById(request.departureCityId()));
+        route.setArrivalCity(cityMap.get(request.arrivalCityId()));
+        route.setDepartureCity(cityMap.get(request.departureCityId()));
 
-        for(UpdateRouteStopRequest updateRouteStopRequest: request.routeStops()){
-            Optional<RouteStop> optionalRouteStop = routeStopRepository.findById(updateRouteStopRequest.id());
-            if(optionalRouteStop.isEmpty()){
-                throw new RouteStopNotFoundException("Route stop not found");
+        Map<Long, RouteStop> existingStops = route.getRouteStopList().stream()
+                .collect(Collectors.toMap(RouteStop::getId, s -> s));
+
+        List<UpdateRouteStopRequest> sortedStops = request.routeStops() != null
+                ? request.routeStops().stream()
+                .sorted(Comparator.comparing(UpdateRouteStopRequest::id))
+                .toList()
+                : Collections.emptyList();
+
+        for(UpdateRouteStopRequest updateRouteStopRequest: sortedStops){
+            RouteStop routeStop = existingStops.get(updateRouteStopRequest.id());
+            if(routeStop == null){
+                throw new RouteStopNotFoundException("Route stop not found: " + updateRouteStopRequest.id());
             }
-            RouteStop routeStop = optionalRouteStop.get();
-            if(!cityRepository.existsById(updateRouteStopRequest.cityId())){
-                throw new CityNotFoundException("City stop not found");
+            City stopCity = cityMap.get(updateRouteStopRequest.cityId());
+            if(stopCity == null){
+                throw new CityNotFoundException("City stop not found: " + updateRouteStopRequest.cityId());
             }
-            routeStop.setCity(cityRepository.getReferenceById(updateRouteStopRequest.cityId()));
+            routeStop.setCity(stopCity);
             routeStop.setStopName(updateRouteStopRequest.stopName());
             routeStop.setStopOrder(updateRouteStopRequest.stopOrder());
             routeStop.setDistanceFromStart(updateRouteStopRequest.distanceFromStart());
             routeStop.setEstimatedArrivalOffsetMinutes(updateRouteStopRequest.estimatedArrivalOffsetMinutes());
             routeStop.setIsPickup(updateRouteStopRequest.isPickup());
             routeStop.setIsDropOff(updateRouteStopRequest.isDropOff());
-
         }
         routeRepository.save(route);
 
