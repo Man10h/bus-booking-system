@@ -142,12 +142,18 @@ public class ScheduleServiceImpl implements ScheduleService {
             throw new IllegalArgumentException("Departure time must be before arrival time");
         }
 
-        String lockKey = "lock:vehicle_schedule:" + request.vehicleId();
-        Boolean locked = stringRedisTemplate.opsForValue()
-                .setIfAbsent(lockKey, "LOCKED", Duration.ofSeconds(5));
+        String vehicleLockKey = "lock:vehicle_schedule:" + request.vehicleId();
+        String routeLockKey = "lock:route_schedule:" + request.routeId();
 
-        if (Boolean.FALSE.equals(locked)) {
-            throw new IllegalStateException("Hệ thống đang xếp lịch cho xe này, vui lòng không thao tác lặp lại!");
+        Boolean vehicleLocked = stringRedisTemplate.opsForValue()
+                .setIfAbsent(vehicleLockKey, "LOCKED", Duration.ofSeconds(5));
+        Boolean routeLocked = stringRedisTemplate.opsForValue()
+                .setIfAbsent(routeLockKey, "LOCKED", Duration.ofSeconds(5));
+
+        if (Boolean.FALSE.equals(vehicleLocked) || Boolean.FALSE.equals(routeLocked)) {
+            if (Boolean.TRUE.equals(vehicleLocked)) stringRedisTemplate.delete(vehicleLockKey);
+            if (Boolean.TRUE.equals(routeLocked)) stringRedisTemplate.delete(routeLockKey);
+            throw new IllegalStateException("Xe hoặc tuyến xe đang được xếp lịch hoặc xử lý bởi thao tác khác, vui lòng thử lại sau!");
         }
 
         try {
@@ -210,7 +216,8 @@ public class ScheduleServiceImpl implements ScheduleService {
 
             return toDetailResponse(schedule);
         } finally {
-            stringRedisTemplate.delete(lockKey);
+            stringRedisTemplate.delete(vehicleLockKey);
+            stringRedisTemplate.delete(routeLockKey);
         }
     }
 

@@ -43,10 +43,14 @@ public class RouteSpecification {
 
     public static Specification<Route> status(String status) {
         return (root, query, cb) -> {
-            if (status == null) {
+            if (status == null || status.isBlank()) {
                 return null;
             }
-            return cb.equal(root.get("status"), RouteStatus.valueOf(status));
+            try {
+                return cb.equal(root.get("status"), RouteStatus.valueOf(status.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                return cb.disjunction();
+            }
         };
     }
 }

@@ -55,6 +55,8 @@ class BookingServiceImplTest {
     private ObjectMapper objectMapper;
     @Mock
     private KafkaTemplate<String, String> kafkaTemplate;
+    @Mock
+    private org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
 
     @InjectMocks
     private BookingServiceImpl bookingService;
@@ -142,11 +144,15 @@ class BookingServiceImplTest {
             assertEquals(userId, response.getUserId());
             assertEquals(BookingStatus.PENDING_PAYMENT, response.getStatus());
             assertEquals(BigDecimal.valueOf(500000), response.getTotalAmount());
-            assertEquals(ScheduleSeatStatus.HELD, availableSeat1.getStatus());
-            assertEquals(ScheduleSeatStatus.HELD, availableSeat2.getStatus());
-            assertEquals(userId, availableSeat1.getHeldBy());
 
-            verify(scheduleSeatRepository, times(2)).save(any(ScheduleSeat.class));
+            verify(scheduleSeatRepository, times(1)).holdSeatsBatch(
+                    eq(ScheduleSeatStatus.HELD),
+                    any(Booking.class),
+                    eq(userId),
+                    any(),
+                    any(),
+                    eq(List.of(10L, 11L))
+            );
             verify(bookingRepository, times(1)).save(any(Booking.class));
         }
 
@@ -221,14 +227,6 @@ class BookingServiceImplTest {
                         }
                     });
 
-            when(scheduleSeatRepository.save(any(ScheduleSeat.class))).thenAnswer(invocation -> {
-                ScheduleSeat seat = invocation.getArgument(0);
-                synchronized (availableSeat1) {
-                    availableSeat1.setStatus(seat.getStatus());
-                }
-                return seat;
-            });
-
             when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             for (int i = 0; i < numberOfThreads; i++) {
@@ -260,17 +258,27 @@ class BookingServiceImplTest {
         @Test
         @DisplayName("Should update booking paid status successfully")
         void updateBookingPaidStatus_Success() {
+            Schedule schedule = Schedule.builder()
+                    .id(100L)
+                    .availableSeats(30L)
+                    .build();
+
             Booking booking = Booking.builder()
                     .id(50L)
+                    .userId("user-123")
                     .status(BookingStatus.PENDING_PAYMENT)
+                    .schedule(schedule)
                     .build();
 
             when(bookingRepository.findById(50L)).thenReturn(Optional.of(booking));
+            when(scheduleSeatRepository.findScheduleSeatForUpdateBooking(50L)).thenReturn(List.of(10L));
 
             bookingService.updateBookingPaidStatus(50L);
 
             assertEquals(BookingStatus.PAID, booking.getStatus());
+            assertEquals(29L, schedule.getAvailableSeats());
             verify(bookingRepository, times(1)).save(booking);
+            verify(scheduleRepository, times(1)).save(schedule);
         }
 
         @Test

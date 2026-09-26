@@ -42,6 +42,7 @@ export const OperatorVehicles: React.FC = () => {
   const [description, setDescription] = useState('');
   const [vehicleTypeId, setVehicleTypeId] = useState<number | ''>('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Seat schema modal state
   const [isSeatsModalOpen, setIsSeatsModalOpen] = useState(false);
@@ -91,21 +92,24 @@ export const OperatorVehicles: React.FC = () => {
     e.preventDefault();
     setFormError(null);
 
+    if (isSubmitting) return;
+
     if (!licensePlate || !brand || !model || !vehicleTypeId) {
       setFormError('Vui lòng điền các trường bắt buộc.');
       return;
     }
 
     const payload = {
-      licensePlate,
-      brand,
-      model,
-      description,
+      licensePlate: licensePlate.trim().toUpperCase(),
+      brand: brand.trim(),
+      model: model.trim(),
+      description: description.trim(),
       totalSeats: 0, // Backend calculates this automatically based on vehicleTypeId
       vehicleTypeId: Number(vehicleTypeId)
     };
 
     try {
+      setIsSubmitting(true);
       if (editingVehicleId !== null) {
         await updateVehicle(editingVehicleId, payload);
       } else {
@@ -113,7 +117,10 @@ export const OperatorVehicles: React.FC = () => {
       }
       setIsVehicleModalOpen(false);
     } catch (err: any) {
-      setFormError(err.message || 'Lỗi lưu thông tin xe.');
+      const errorMsg = err.response?.data?.message || err.message || 'Lỗi lưu thông tin xe.';
+      setFormError(errorMsg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -456,15 +463,15 @@ export const OperatorVehicles: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading}
-                  className="bg-baolau-cyan hover:bg-baolau-cyan/90 text-white font-bold text-xs uppercase tracking-wider px-5 py-2 rounded shadow transition flex items-center space-x-1.5"
+                  disabled={isSubmitting || isLoading}
+                  className="bg-baolau-cyan hover:bg-baolau-cyan/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs uppercase tracking-wider px-5 py-2 rounded shadow transition flex items-center space-x-1.5"
                 >
-                  {isLoading ? (
+                  {isSubmitting || isLoading ? (
                     <Loader2 className="animate-spin" size={14} />
                   ) : (
                     <Save size={14} />
                   )}
-                  <span>Lưu lại</span>
+                  <span>{isSubmitting ? 'Đang lưu...' : 'Lưu lại'}</span>
                 </button>
               </div>
             </form>

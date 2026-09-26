@@ -44,6 +44,7 @@ public class Route {
     private Operator operator;
 
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("stopOrder ASC")
     private List<RouteStop> routeStopList;
 
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)

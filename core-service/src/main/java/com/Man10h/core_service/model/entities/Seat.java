@@ -17,7 +17,8 @@ import java.util.Set;
 @NoArgsConstructor
 public class Seat {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seat_seq_gen")
+    @SequenceGenerator(name = "seat_seq_gen", sequenceName = "seat_id_seq", allocationSize = 50)
     private Long id;
 
     @Column(name = "seat_number")

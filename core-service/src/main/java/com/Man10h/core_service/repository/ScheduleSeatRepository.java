@@ -75,6 +75,18 @@ public interface ScheduleSeatRepository extends JpaRepository<ScheduleSeat, Long
             @Param("seatIds") List<Long> seatIds
     );
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+    SELECT ss
+    FROM ScheduleSeat ss
+    WHERE ss.seat.id = :seatId
+      AND ss.schedule.status IN (
+          com.Man10h.core_service.model.enums.ScheduleStatus.OPEN,
+          com.Man10h.core_service.model.enums.ScheduleStatus.RUNNING
+      )
+""")
+    List<ScheduleSeat> findAllBySeatIdForUpdate(@Param("seatId") Long seatId);
+
     boolean existsBySeat_IdAndStatusIn(Long seatId, List<ScheduleSeatStatus> seatStatuses);
 
     boolean existsBySeat_IdAndSchedule_StatusInAndStatusIn(Long seatId, List<ScheduleStatus> scheduleStatuses, List<ScheduleSeatStatus> statuses);
@@ -92,4 +104,20 @@ WHERE ss.booking_id = b.id
   AND b.payment_deadline < :now
 """, nativeQuery = true)
     int releaseExpiredSeats(@Param("now") LocalDateTime now);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+    UPDATE ScheduleSeat ss
+    SET ss.status = :targetStatus
+    WHERE ss.seat.id = :seatId
+      AND ss.status = :currentStatus
+      AND ss.schedule.id IN (
+          SELECT s.id FROM Schedule s WHERE s.status = com.Man10h.core_service.model.enums.ScheduleStatus.OPEN
+      )
+""")
+    int cascadeUpdateScheduleSeatStatus(
+            @Param("seatId") Long seatId,
+            @Param("currentStatus") ScheduleSeatStatus currentStatus,
+            @Param("targetStatus") ScheduleSeatStatus targetStatus
+    );
 }

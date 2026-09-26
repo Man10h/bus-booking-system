@@ -6,6 +6,7 @@ import com.Man10h.core_service.model.request.UpdateRouteRequest;
 import com.Man10h.core_service.model.response.*;
 import com.Man10h.core_service.service.RouteService;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -39,7 +40,7 @@ public class RouteController {
 
     @PreAuthorize("hasRole('OPERATOR')")
     @PostMapping("/routes")
-    public ResponseEntity<ApiResponse<RouteDetailResponse>> createRoute(@RequestBody CreateRouteRequest request,
+    public ResponseEntity<ApiResponse<RouteDetailResponse>> createRoute(@Valid @RequestBody CreateRouteRequest request,
                                                                         @AuthenticationPrincipal Jwt jwt) {
         RouteDetailResponse data = routeService.createRoute(jwt.getSubject(), request);
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));
@@ -48,7 +49,7 @@ public class RouteController {
     @PreAuthorize("hasRole('OPERATOR')")
     @PutMapping("/routes/{routeId}")
     public ResponseEntity<ApiResponse<RouteDetailResponse>> updateRoute(@PathVariable Long routeId,
-                                                                        @RequestBody UpdateRouteRequest request,
+                                                                        @Valid @RequestBody UpdateRouteRequest request,
                                                                         @AuthenticationPrincipal Jwt jwt) {
         RouteDetailResponse data = routeService.updateRoute(routeId, jwt.getSubject(), request);
         return ResponseEntity.ok(new ApiResponse<>(data, "success", 200));

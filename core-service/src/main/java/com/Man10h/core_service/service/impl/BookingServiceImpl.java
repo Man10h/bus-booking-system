@@ -158,7 +158,8 @@ public class BookingServiceImpl implements BookingService {
         if(optionalSchedule.get().getStatus() != ScheduleStatus.OPEN){
             throw new IllegalArgumentException("Schedule is not OPEN");
         }
-        List<ScheduleSeat> scheduleSeatList =  scheduleSeatRepository.findAllForUpdate(request.scheduleId(), request.scheduleSeatIds());
+        List<Long> sortedSeatIds = request.scheduleSeatIds().stream().sorted().toList();
+        List<ScheduleSeat> scheduleSeatList =  scheduleSeatRepository.findAllForUpdate(request.scheduleId(), sortedSeatIds);
         if(scheduleSeatList.size() != request.scheduleSeatIds().size()) {
             throw new IllegalArgumentException("Schedule seats do not match");
         }

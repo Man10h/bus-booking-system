@@ -18,6 +18,10 @@ public class VehicleType {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @Column(name = "seat_type")
     @Enumerated(EnumType.STRING)
     private SeatType seatType;

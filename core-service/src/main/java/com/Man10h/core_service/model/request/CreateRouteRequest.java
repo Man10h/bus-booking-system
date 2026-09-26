@@ -1,5 +1,6 @@
 package com.Man10h.core_service.model.request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -24,6 +25,6 @@ public record CreateRouteRequest (
         Long estimatedDurationMinutes,
 
         @NotEmpty(message = "Route stop is required")
-        List<CreateRouteStopRequest> routeStops
+        List<@Valid CreateRouteStopRequest> routeStops
 ){
 }

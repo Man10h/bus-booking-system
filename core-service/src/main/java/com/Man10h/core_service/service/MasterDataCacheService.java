@@ -2,8 +2,10 @@ package com.Man10h.core_service.service;
 
 import com.Man10h.core_service.model.entities.City;
 import com.Man10h.core_service.model.entities.Operator;
+import com.Man10h.core_service.model.entities.VehicleType;
 import com.Man10h.core_service.repository.CityRepository;
 import com.Man10h.core_service.repository.OperatorRepository;
+import com.Man10h.core_service.repository.VehicleTypeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -12,8 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,9 +22,11 @@ public class MasterDataCacheService {
 
     private final CityRepository cityRepository;
     private final OperatorRepository operatorRepository;
+    private final VehicleTypeRepository vehicleTypeRepository;
 
     private final Map<Long, City> cityCache = new ConcurrentHashMap<>();
     private final Map<String, Operator> operatorCache = new ConcurrentHashMap<>();
+    private final Map<Long, VehicleType> vehicleTypeCache = new ConcurrentHashMap<>();
 
     @EventListener(ApplicationReadyEvent.class)
     public void preloadCache() {
@@ -36,6 +38,16 @@ public class MasterDataCacheService {
             log.info("MasterDataCacheService: Preloaded {} cities into in-memory cache", cityCache.size());
         } catch (Exception e) {
             log.warn("MasterDataCacheService: Could not preload cities during startup: {}", e.getMessage());
+        }
+
+        try {
+            List<VehicleType> vehicleTypes = vehicleTypeRepository.findAll();
+            for (VehicleType vt : vehicleTypes) {
+                vehicleTypeCache.put(vt.getId(), vt);
+            }
+            log.info("MasterDataCacheService: Preloaded {} vehicle types into in-memory cache", vehicleTypeCache.size());
+        } catch (Exception e) {
+            log.warn("MasterDataCacheService: Could not preload vehicle types during startup: {}", e.getMessage());
         }
     }
 
@@ -80,5 +92,24 @@ public class MasterDataCacheService {
 
     public void evictOperator(String userId) {
         operatorCache.remove(userId);
+    }
+
+    public Optional<VehicleType> getVehicleTypeById(Long vehicleTypeId) {
+        VehicleType cached = vehicleTypeCache.get(vehicleTypeId);
+        if (cached != null) {
+            return Optional.of(cached);
+        }
+
+        Optional<VehicleType> fromDb = vehicleTypeRepository.findById(vehicleTypeId);
+        fromDb.ifPresent(vt -> vehicleTypeCache.put(vehicleTypeId, vt));
+        return fromDb;
+    }
+
+    public void evictVehicleType(Long vehicleTypeId) {
+        if (vehicleTypeId != null) {
+            vehicleTypeCache.remove(vehicleTypeId);
+        } else {
+            vehicleTypeCache.clear();
+        }
     }
 }

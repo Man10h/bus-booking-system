@@ -12,4 +12,5 @@
     <include file="/db/changelog/scripts/add_route_schedule_concurrency_constraints.sql"/>
     <include file="/db/changelog/scripts/add_route_sequences.sql"/>
     <include file="/db/changelog/scripts/add_route_version_columns.sql"/>
+    <include file="/db/changelog/scripts/add_vehicle_concurrency_constraints.sql"/>
 </databaseChangeLog>

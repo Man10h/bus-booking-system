@@ -51,6 +51,7 @@ export const OperatorRoutes: React.FC = () => {
   const [stops, setStops] = useState<StopInput[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [togglingRouteId, setTogglingRouteId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchRoutes(0, 10);
@@ -193,12 +194,15 @@ export const OperatorRoutes: React.FC = () => {
   };
 
   const handleToggleStatus = async (routeId: number, currentStatus: string) => {
+    if (togglingRouteId === routeId) return;
+
     const isCurrentlyActive = currentStatus === 'ACTIVE';
     const confirmMessage = isCurrentlyActive
       ? 'Bạn có chắc chắn muốn tạm dừng hoạt động của tuyến xe này?'
       : 'Bạn có chắc chắn muốn kích hoạt lại tuyến xe này?';
 
     if (window.confirm(confirmMessage)) {
+      setTogglingRouteId(routeId);
       try {
         if (isCurrentlyActive) {
           await deactivateRoute(routeId);
@@ -207,6 +211,8 @@ export const OperatorRoutes: React.FC = () => {
         }
       } catch (err: any) {
         alert(err.message || 'Lỗi thay đổi trạng thái tuyến xe');
+      } finally {
+        setTogglingRouteId(null);
       }
     }
   };
@@ -280,15 +286,20 @@ export const OperatorRoutes: React.FC = () => {
                         <Edit2 size={14} />
                       </button>
                       <button
+                        disabled={togglingRouteId === route.id}
                         onClick={() => handleToggleStatus(route.id, route.status)}
                         className={`p-1.5 rounded transition ${
                           route.status === 'ACTIVE'
                             ? 'bg-red-50 text-red-400 hover:bg-red-500 hover:text-white'
                             : 'bg-emerald-50 text-emerald-500 hover:bg-emerald-600 hover:text-white'
-                        }`}
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
                         title={route.status === 'ACTIVE' ? 'Tạm dừng tuyến xe' : 'Kích hoạt lại tuyến xe'}
                       >
-                        <Power size={14} />
+                        {togglingRouteId === route.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Power size={14} />
+                        )}
                       </button>
                     </td>
                   </tr>

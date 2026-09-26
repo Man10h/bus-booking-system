@@ -2,6 +2,7 @@ package com.Man10h.core_service.service.impl;
 
 import com.Man10h.core_service.controller.exception.*;
 import com.Man10h.core_service.model.entities.Operator;
+import com.Man10h.core_service.model.entities.ScheduleSeat;
 import com.Man10h.core_service.model.entities.Seat;
 import com.Man10h.core_service.model.entities.Vehicle;
 import com.Man10h.core_service.model.entities.VehicleType;
@@ -10,15 +11,19 @@ import com.Man10h.core_service.model.request.*;
 import com.Man10h.core_service.model.response.*;
 import com.Man10h.core_service.repository.*;
 import com.Man10h.core_service.repository.spec.VehicleTypeSpecification;
+import com.Man10h.core_service.service.MasterDataCacheService;
 import com.Man10h.core_service.service.VehicleService;
 import com.Man10h.core_service.util.SeatGenerator;
+import com.Man10h.core_service.util.TransactionalCacheEvictor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +40,9 @@ public class VehicleServiceImpl implements VehicleService {
     private final SeatRepository seatRepository;
     private final ScheduleRepository scheduleRepository;
     private final ScheduleSeatRepository scheduleSeatRepository;
+    private final MasterDataCacheService masterDataCacheService;
+    private final StringRedisTemplate stringRedisTemplate;
+    private final TransactionalCacheEvictor transactionalCacheEvictor;
 
     public Vehicle getVehicleDetailById(Long id) {
         Optional<Vehicle> optional = vehicleRepository.getDetailById(id);
@@ -53,11 +61,8 @@ public class VehicleServiceImpl implements VehicleService {
     }
 
     public Operator getOperatorByUserId(String userId) {
-        Optional<Operator> optional = operatorRepository.findByUserId(userId);
-        if(optional.isEmpty()) {
-            throw new OperatorNotFoundException("Operator not found");
-        }
-        return optional.get();
+        return masterDataCacheService.getOperatorByUserId(userId)
+                .orElseThrow(() -> new OperatorNotFoundException("Operator not found"));
     }
 
     public VehicleResponse toResponse(Vehicle vehicle) {
@@ -89,16 +94,20 @@ public class VehicleServiceImpl implements VehicleService {
 
     @Transactional
     public VehicleResponse createVehicle(String userId, CreateVehicleRequest request) {
-        Operator operator = getOperatorByUserId(userId);
-        Optional<VehicleType> optionalVehicleType = vehicleTypeRepository.findById(request.vehicleTypeId());
-        if(optionalVehicleType.isEmpty()) {
-            throw new VehicleTypeNotFoundException("Vehicle type not found");
+        String normalizedLicensePlate = request.licensePlate().trim().toUpperCase();
+        if (vehicleRepository.existsByLicensePlate(normalizedLicensePlate)) {
+            throw new LicensePlateAlreadyExistsException("Biển số xe " + normalizedLicensePlate + " đã tồn tại trong hệ thống!");
         }
-        VehicleType vehicleType = optionalVehicleType.get();
+
+        Operator operator = masterDataCacheService.getOperatorByUserId(userId)
+                .orElseThrow(() -> new OperatorNotFoundException("Operator not found"));
+        VehicleType vehicleType = masterDataCacheService.getVehicleTypeById(request.vehicleTypeId())
+                .orElseThrow(() -> new VehicleTypeNotFoundException("Vehicle type not found"));
+
         Vehicle vehicle = Vehicle.builder()
                 .brand(request.brand())
                 .model(request.model())
-                .licensePlate(request.licensePlate())
+                .licensePlate(normalizedLicensePlate)
                 .description(request.description())
                 .totalSeats((long) vehicleType.getRows() * vehicleType.getCols() * vehicleType.getFloors())
                 .status(VehicleStatus.ACTIVE)
@@ -106,7 +115,7 @@ public class VehicleServiceImpl implements VehicleService {
                 .operator(operator)
                 .build();
 
-        List<Seat> seatList = seatGenerator.generate(optionalVehicleType.get());
+        List<Seat> seatList = seatGenerator.generate(vehicleType);
         seatList.forEach(seat -> seat.setVehicle(vehicle));
         vehicle.setVehicleSeatList(seatList);
         vehicleRepository.save(vehicle);
@@ -125,6 +134,11 @@ public class VehicleServiceImpl implements VehicleService {
 
     @Transactional
     public void updateVehicle(Long id, String userId, UpdateVehicleRequest request) {
+        String normalizedLicensePlate = request.licensePlate().trim().toUpperCase();
+        if (vehicleRepository.existsByLicensePlateAndIdNot(normalizedLicensePlate, id)) {
+            throw new LicensePlateAlreadyExistsException("Biển số xe " + normalizedLicensePlate + " đã tồn tại trong hệ thống!");
+        }
+
         if(!vehicleTypeRepository.existsById(request.vehicleTypeId())){
             throw new VehicleTypeNotFoundException("Vehicle type not found");
         }
@@ -134,29 +148,49 @@ public class VehicleServiceImpl implements VehicleService {
             throw new AccessDeniedException("You not owned this vehicle");
         }
 
-        // If changing vehicle type, check for active schedules and regenerate seats
-        if (!vehicle.getVehicleType().getId().equals(request.vehicleTypeId())) {
-            if (scheduleRepository.existsByVehicle_IdAndStatusIn(id, List.of(ScheduleStatus.OPEN, ScheduleStatus.RUNNING))) {
-                throw new IllegalStateException("Cannot change vehicle type because the vehicle has active schedules");
-            }
-            VehicleType newVehicleType = vehicleTypeRepository.findById(request.vehicleTypeId())
-                    .orElseThrow(() -> new VehicleTypeNotFoundException("Vehicle type not found"));
+        boolean isChangingVehicleType = !vehicle.getVehicleType().getId().equals(request.vehicleTypeId());
+        String vehicleLockKey = "lock:vehicle_schedule:" + id;
+        Boolean vehicleLocked = null;
 
-            vehicle.getVehicleSeatList().clear();
-            List<Seat> seatList = seatGenerator.generate(newVehicleType);
-            seatList.forEach(seat -> seat.setVehicle(vehicle));
-            vehicle.getVehicleSeatList().addAll(seatList);
-            vehicle.setVehicleType(newVehicleType);
-            vehicle.setTotalSeats((long) newVehicleType.getRows() * newVehicleType.getCols() * newVehicleType.getFloors());
-        } else {
-            vehicle.setTotalSeats(request.totalSeats());
+        if (isChangingVehicleType) {
+            vehicleLocked = stringRedisTemplate.opsForValue()
+                    .setIfAbsent(vehicleLockKey, "LOCKED", Duration.ofSeconds(5));
+            if (Boolean.FALSE.equals(vehicleLocked)) {
+                throw new IllegalStateException("Xe đang được xếp lịch hoặc xử lý bởi thao tác khác, vui lòng thử lại sau!");
+            }
         }
 
-        vehicle.setLicensePlate(request.licensePlate());
-        vehicle.setBrand(request.brand());
-        vehicle.setModel(request.model());
-        vehicle.setDescription(request.description());
-        vehicleRepository.save(vehicle);
+        try {
+            // If changing vehicle type, check for active schedules and regenerate seats
+            if (isChangingVehicleType) {
+                if (scheduleRepository.existsByVehicle_IdAndStatusIn(id, List.of(ScheduleStatus.OPEN, ScheduleStatus.RUNNING))) {
+                    throw new IllegalStateException("Cannot change vehicle type because the vehicle has active schedules");
+                }
+                VehicleType newVehicleType = vehicleTypeRepository.findById(request.vehicleTypeId())
+                        .orElseThrow(() -> new VehicleTypeNotFoundException("Vehicle type not found"));
+
+                vehicle.getVehicleSeatList().clear();
+                List<Seat> seatList = seatGenerator.generate(newVehicleType);
+                seatList.forEach(seat -> seat.setVehicle(vehicle));
+                vehicle.getVehicleSeatList().addAll(seatList);
+                vehicle.setVehicleType(newVehicleType);
+                vehicle.setTotalSeats((long) newVehicleType.getRows() * newVehicleType.getCols() * newVehicleType.getFloors());
+            } else {
+                vehicle.setTotalSeats(request.totalSeats());
+            }
+
+            vehicle.setLicensePlate(normalizedLicensePlate);
+            vehicle.setBrand(request.brand());
+            vehicle.setModel(request.model());
+            vehicle.setDescription(request.description());
+            vehicleRepository.save(vehicle);
+
+            transactionalCacheEvictor.evictAfterCommit("vehicles");
+        } finally {
+            if (isChangingVehicleType && Boolean.TRUE.equals(vehicleLocked)) {
+                stringRedisTemplate.delete(vehicleLockKey);
+            }
+        }
     }
 
     @Transactional
@@ -165,17 +199,46 @@ public class VehicleServiceImpl implements VehicleService {
         if(!vehicle.getOperator().getUserId().equals(userId)){
             throw new AccessDeniedException("You not owned this vehicle");
         }
-        VehicleStatus vehicleStatus = VehicleStatus.valueOf(status);
+        if (status == null || status.isBlank()) {
+            throw new IllegalArgumentException("Trạng thái xe không được để trống!");
+        }
+        String cleanStatus = status.trim().replace("\"", "").toUpperCase();
+        VehicleStatus vehicleStatus;
+        try {
+            vehicleStatus = VehicleStatus.valueOf(cleanStatus);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái xe không hợp lệ: " + status + ". Giá trị hợp lệ: ACTIVE, INACTIVE");
+        }
+
         if(vehicleStatus == vehicle.getStatus()){
             return;
         }
-        if(vehicleStatus != VehicleStatus.ACTIVE){
-            if(scheduleRepository.existsByVehicle_IdAndStatusIn(id, List.of(ScheduleStatus.OPEN, ScheduleStatus.RUNNING))){
-                throw new IllegalStateException("Schedule is already open or running");
+
+        String vehicleLockKey = "lock:vehicle_schedule:" + id;
+        Boolean vehicleLocked = null;
+        if (vehicleStatus != VehicleStatus.ACTIVE) {
+            vehicleLocked = stringRedisTemplate.opsForValue()
+                    .setIfAbsent(vehicleLockKey, "LOCKED", Duration.ofSeconds(5));
+            if (Boolean.FALSE.equals(vehicleLocked)) {
+                throw new IllegalStateException("Xe đang được xếp lịch hoặc xử lý bởi thao tác khác, vui lòng thử lại sau!");
             }
         }
-        vehicle.setStatus(vehicleStatus);
-        vehicleRepository.save(vehicle);
+
+        try {
+            if(vehicleStatus != VehicleStatus.ACTIVE){
+                if(scheduleRepository.existsByVehicle_IdAndStatusIn(id, List.of(ScheduleStatus.OPEN, ScheduleStatus.RUNNING))){
+                    throw new IllegalStateException("Schedule is already open or running");
+                }
+            }
+            vehicle.setStatus(vehicleStatus);
+            vehicleRepository.save(vehicle);
+
+            transactionalCacheEvictor.evictAfterCommit("vehicles");
+        } finally {
+            if (vehicleStatus != VehicleStatus.ACTIVE && Boolean.TRUE.equals(vehicleLocked)) {
+                stringRedisTemplate.delete(vehicleLockKey);
+            }
+        }
     }
 
     @Override
@@ -203,40 +266,39 @@ public class VehicleServiceImpl implements VehicleService {
         ).toList();
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void updateSeatStatus(Long id, String userId, String status) {
-        Optional<Seat> optional = seatRepository.findByIdAndVehicle_Operator_UserId(id, userId);
-        if(optional.isEmpty()){
-            throw new SeatNotFoundException("Seat not found");
+        Seat seat = seatRepository.findByIdAndVehicle_Operator_UserId(id, userId)
+                .orElseThrow(() -> new SeatNotFoundException("Seat not found"));
+
+        if (status == null || status.isBlank()) {
+            throw new IllegalArgumentException("Trạng thái ghế không được để trống!");
         }
-        Seat seat = optional.get();
-        SeatStatus seatStatus = SeatStatus.valueOf(status);
-        if(seat.getStatus() == seatStatus){
+        String cleanStatus = status.trim().replace("\"", "").toUpperCase();
+        SeatStatus seatStatus;
+        try {
+            seatStatus = SeatStatus.valueOf(cleanStatus);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái ghế không hợp lệ: " + status + ". Giá trị hợp lệ: ACTIVE, INACTIVE");
+        }
+
+        if (seat.getStatus() == seatStatus) {
             return;
         }
 
-        if(seatStatus == SeatStatus.INACTIVE){
-            if(scheduleSeatRepository.existsBySeat_IdAndSchedule_StatusInAndStatusIn(id,
-                    List.of(ScheduleStatus.OPEN, ScheduleStatus.RUNNING),
-                    List.of(ScheduleSeatStatus.HELD, ScheduleSeatStatus.BOOKED
-            ))){
+        if (seatStatus == SeatStatus.INACTIVE) {
+            List<ScheduleSeat> activeScheduleSeats = scheduleSeatRepository.findAllBySeatIdForUpdate(id);
+            boolean isHeldOrBooked = activeScheduleSeats.stream()
+                    .anyMatch(ss -> ss.getStatus() == ScheduleSeatStatus.HELD
+                            || ss.getStatus() == ScheduleSeatStatus.BOOKED);
+            if (isHeldOrBooked) {
                 throw new IllegalStateException("Schedule seat is held/booked");
             }
-            seat.getScheduleSeatList().forEach(scheduleSeat -> {
-                if(scheduleSeat.getStatus() == ScheduleSeatStatus.AVAILABLE && scheduleSeat.getSchedule().getStatus() == ScheduleStatus.OPEN){
-                    scheduleSeat.setStatus(ScheduleSeatStatus.BLOCKED);
-                }
-            });
+            scheduleSeatRepository.cascadeUpdateScheduleSeatStatus(id, ScheduleSeatStatus.AVAILABLE, ScheduleSeatStatus.BLOCKED);
         }
 
         if (seatStatus == SeatStatus.ACTIVE) {
-            seat.getScheduleSeatList().forEach(scheduleSeat -> {
-                if (scheduleSeat.getStatus() == ScheduleSeatStatus.BLOCKED
-                        && scheduleSeat.getSchedule().getStatus() == ScheduleStatus.OPEN) {
-
-                    scheduleSeat.setStatus(ScheduleSeatStatus.AVAILABLE);
-                }
-            });
+            scheduleSeatRepository.cascadeUpdateScheduleSeatStatus(id, ScheduleSeatStatus.BLOCKED, ScheduleSeatStatus.AVAILABLE);
         }
         seat.setStatus(seatStatus);
         seatRepository.save(seat);
@@ -244,13 +306,10 @@ public class VehicleServiceImpl implements VehicleService {
 
     @Transactional
     public void updateSeatVipStatus(Long id, String userId) {
-        Optional<Seat> optional = seatRepository.findByIdAndVehicle_Operator_UserId(id, userId);
-        if(optional.isEmpty()){
+        int updated = seatRepository.toggleSeatVipAtomic(id, userId);
+        if(updated == 0){
             throw new SeatNotFoundException("Seat not found");
         }
-        Seat seat = optional.get();
-        seat.setIsVip(!seat.getIsVip());
-        seatRepository.save(seat);
     }
 
     private VehicleTypeResponse toVehicleTypeResponse(VehicleType vehicleType) {
@@ -306,6 +365,7 @@ public class VehicleServiceImpl implements VehicleService {
                 .seatType(SeatType.valueOf(request.seatType()))
                 .build();
         vehicleTypeRepository.save(vehicleType);
+        masterDataCacheService.evictVehicleType(null);
         return new VehicleTypeResponse(
                 vehicleType.getId(),
                 vehicleType.getSeatType(),
@@ -329,6 +389,7 @@ public class VehicleServiceImpl implements VehicleService {
             vehicleType.setCols(request.cols());
             vehicleType.setSeatType(SeatType.valueOf(request.seatType()));
             vehicleTypeRepository.save(vehicleType);
+            masterDataCacheService.evictVehicleType(id);
         }
         else {
             throw new VehicleTypeAlreadyInUseException("Vehicle type already in use");
@@ -341,6 +402,7 @@ public class VehicleServiceImpl implements VehicleService {
                 .orElseThrow(() -> new VehicleNotFoundException("Vehicle not found"));
         if(vehicleType.getVehicles() == null || vehicleType.getVehicles().isEmpty()){
             vehicleTypeRepository.delete(vehicleType);
+            masterDataCacheService.evictVehicleType(id);
         }
         else {
             throw new VehicleTypeAlreadyInUseException("Vehicle type already in use");

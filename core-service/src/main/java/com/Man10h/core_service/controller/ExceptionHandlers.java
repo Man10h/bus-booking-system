@@ -237,6 +237,8 @@ public class ExceptionHandlers {
             message = "Mã tuyến đường này đã tồn tại trong hệ thống. Vui lòng chọn mã khác!";
         } else if (detailedMessage.contains("uq_operator_active_route")) {
             message = "Nhà xe đã có một tuyến đường đang hoạt động cho chặng này!";
+        } else if (detailedMessage.contains("uq_vehicle_license_plate") || detailedMessage.contains("license_plate")) {
+            message = "Biển số xe này đã tồn tại trong hệ thống. Vui lòng kiểm tra lại!";
         }
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(
@@ -249,13 +251,25 @@ public class ExceptionHandlers {
         );
     }
 
+    @ExceptionHandler(LicensePlateAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> licensePlateAlreadyExistsException(LicensePlateAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                new ErrorResponse(
+                        HttpStatus.CONFLICT.getReasonPhrase(),
+                        HttpStatus.CONFLICT.value(),
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                )
+        );
+    }
+
     @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
     public ResponseEntity<ErrorResponse> handleOptimisticLockingFailure(org.springframework.orm.ObjectOptimisticLockingFailureException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(
                 new ErrorResponse(
                         HttpStatus.CONFLICT.getReasonPhrase(),
                         HttpStatus.CONFLICT.value(),
-                        "Dữ liệu tuyến đường đã được thay đổi bởi một phiên làm việc khác. Vui lòng tải lại trang!",
+                        "Dữ liệu đã được thay đổi bởi một phiên làm việc khác. Vui lòng tải lại trang!",
                         LocalDateTime.now()
                 )
         );

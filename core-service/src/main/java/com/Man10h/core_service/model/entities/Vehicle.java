@@ -16,11 +16,16 @@ import java.util.Set;
 @NoArgsConstructor
 public class Vehicle {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "vehicle_seq_gen")
+    @SequenceGenerator(name = "vehicle_seq_gen", sequenceName = "vehicle_id_seq", allocationSize = 1)
     private Long id;
 
-    @Column(name = "license_plate")
+    @Column(name = "license_plate", unique = true)
     private String licensePlate;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
 
     @Column(name = "brand")
     private String brand;

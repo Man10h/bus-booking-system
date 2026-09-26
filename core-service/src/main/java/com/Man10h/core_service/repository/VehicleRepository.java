@@ -46,4 +46,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 """)
     Long getVehicleCountByStatus(@Param("status") VehicleStatus status,
                                  @Param("operatorId") String operatorId);
+
+    boolean existsByLicensePlate(String licensePlate);
+
+    boolean existsByLicensePlateAndIdNot(String licensePlate, Long id);
 }
