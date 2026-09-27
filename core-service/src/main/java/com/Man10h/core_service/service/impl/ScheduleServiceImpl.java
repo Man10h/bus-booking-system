@@ -17,15 +17,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import static com.Man10h.core_service.repository.spec.ScheduleSpecification.*;
 
@@ -42,6 +41,22 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final BookingRepository bookingRepository;
     private final TransactionalCacheEvictor transactionalCacheEvictor;
     private final StringRedisTemplate stringRedisTemplate;
+
+    private static final String UNLOCK_LUA_SCRIPT =
+            "if redis.call('get', KEYS[1]) == ARGV[1] then " +
+            "    return redis.call('del', KEYS[1]) " +
+            "else " +
+            "    return 0 " +
+            "end";
+    private static final RedisScript<Long> UNLOCK_SCRIPT = new DefaultRedisScript<>(UNLOCK_LUA_SCRIPT, Long.class);
+
+    private void releaseLockSafely(String lockKey, String lockValue) {
+        try {
+            stringRedisTemplate.execute(UNLOCK_SCRIPT, Collections.singletonList(lockKey), lockValue);
+        } catch (Exception e) {
+            log.error("Error releasing Redis lock for key: {}", lockKey, e);
+        }
+    }
 
     public VehicleResponse toVehicleResponse(Vehicle vehicle) {
         VehicleType vehicleType = vehicle.getVehicleType();
@@ -143,17 +158,13 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
 
         String vehicleLockKey = "lock:vehicle_schedule:" + request.vehicleId();
-        String routeLockKey = "lock:route_schedule:" + request.routeId();
+        String lockValue = UUID.randomUUID().toString();
 
         Boolean vehicleLocked = stringRedisTemplate.opsForValue()
-                .setIfAbsent(vehicleLockKey, "LOCKED", Duration.ofSeconds(5));
-        Boolean routeLocked = stringRedisTemplate.opsForValue()
-                .setIfAbsent(routeLockKey, "LOCKED", Duration.ofSeconds(5));
+                .setIfAbsent(vehicleLockKey, lockValue, Duration.ofSeconds(5));
 
-        if (Boolean.FALSE.equals(vehicleLocked) || Boolean.FALSE.equals(routeLocked)) {
-            if (Boolean.TRUE.equals(vehicleLocked)) stringRedisTemplate.delete(vehicleLockKey);
-            if (Boolean.TRUE.equals(routeLocked)) stringRedisTemplate.delete(routeLockKey);
-            throw new IllegalStateException("Xe hoặc tuyến xe đang được xếp lịch hoặc xử lý bởi thao tác khác, vui lòng thử lại sau!");
+        if (Boolean.FALSE.equals(vehicleLocked)) {
+            throw new IllegalStateException("Xe đang được xếp lịch hoặc xử lý bởi thao tác khác, vui lòng thử lại sau!");
         }
 
         try {
@@ -216,8 +227,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
             return toDetailResponse(schedule);
         } finally {
-            stringRedisTemplate.delete(vehicleLockKey);
-            stringRedisTemplate.delete(routeLockKey);
+            releaseLockSafely(vehicleLockKey, lockValue);
         }
     }
 

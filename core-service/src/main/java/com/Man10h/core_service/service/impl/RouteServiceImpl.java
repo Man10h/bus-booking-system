@@ -41,6 +41,7 @@ public class RouteServiceImpl implements RouteService {
     private final TransactionalCacheEvictor transactionalCacheEvictor;
     private final com.Man10h.core_service.service.MasterDataCacheService masterDataCacheService;
     private final StringRedisTemplate stringRedisTemplate;
+    private final org.springframework.transaction.support.TransactionTemplate transactionTemplate;
 
     public RouteSummaryResponse toRouteSummaryResponse(Route route) {
         Operator operator = route.getOperator();
@@ -215,8 +216,9 @@ public class RouteServiceImpl implements RouteService {
         );
     }
 
-    @Transactional
+    @Override
     public RouteDetailResponse createRoute(String userId, CreateRouteRequest request) {
+        // Giai đoạn 1: Non-Transactional (100% trong RAM, 0ms connection hold time)
         validateRoute(request.departureCityId(), request.arrivalCityId(), request.distance(), request.estimatedDurationMinutes());
 
         List<StopValidationItem> validationItems = request.routeStops().stream()
@@ -224,16 +226,13 @@ public class RouteServiceImpl implements RouteService {
                 .toList();
         validateRouteStops(validationItems, request.distance(), request.estimatedDurationMinutes());
 
-        if(routeRepository.existsByRouteCode(request.routeCode())){
-            throw new RouteCodeAlreadyExistsException("Route code already exists");
-        }
         Optional<Operator> optionalOperator = masterDataCacheService.getOperatorByUserId(userId);
         if(optionalOperator.isEmpty()){
             throw new OperatorNotFoundException("Operator not found");
         }
         Operator operator = optionalOperator.get();
 
-        // Batch fetch and validate all cities from in-memory cache / batch DB lookup
+        // Batch fetch and validate all cities from in-memory cache
         Set<Long> requiredCityIds = new HashSet<>();
         requiredCityIds.add(request.departureCityId());
         requiredCityIds.add(request.arrivalCityId());
@@ -270,11 +269,18 @@ public class RouteServiceImpl implements RouteService {
                     .build();
             route.getRouteStopList().add(routeStop);
         }
-        routeRepository.save(route);
+
+        // Giai đoạn 2: Micro-Transaction (Chỉ mượn connection trong ~1.5ms để ghi SQL)
+        Route savedRoute = transactionTemplate.execute(status -> {
+            if(routeRepository.existsByRouteCode(request.routeCode())){
+                throw new RouteCodeAlreadyExistsException("Route code already exists");
+            }
+            return routeRepository.save(route);
+        });
 
         transactionalCacheEvictor.evictAfterCommit("routes");
 
-        return toRouteDetailResponse(route);
+        return toRouteDetailResponse(savedRoute != null ? savedRoute : route);
     }
 
     @Transactional
