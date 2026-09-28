@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class OperatorServiceImpl implements OperatorService {
 
     private final OperatorRepository operatorRepository;
-    private final com.Man10h.core_service.service.MasterDataCacheService masterDataCacheService;
+    private final MasterDataCacheService masterDataCacheService;
 
     @Transactional
     public OperatorResponse createOperator(String userId, CreateOperatorRequest request) {

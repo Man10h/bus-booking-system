@@ -15,7 +15,7 @@ import com.Man10h.core_service.model.request.UpdateRouteStopRequest;
 import com.Man10h.core_service.model.response.RouteDetailResponse;
 import com.Man10h.core_service.model.response.RoutePageResponse;
 import com.Man10h.core_service.repository.*;
-import com.Man10h.core_service.service.MasterDataCacheService;
+import com.Man10h.core_service.service.impl.MasterDataCacheService;
 import com.Man10h.core_service.service.impl.RouteServiceImpl;
 import com.Man10h.core_service.util.TransactionalCacheEvictor;
 import org.junit.jupiter.api.DisplayName;

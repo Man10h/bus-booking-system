@@ -11,7 +11,6 @@ import com.Man10h.core_service.model.request.*;
 import com.Man10h.core_service.model.response.*;
 import com.Man10h.core_service.repository.*;
 import com.Man10h.core_service.repository.spec.VehicleTypeSpecification;
-import com.Man10h.core_service.service.MasterDataCacheService;
 import com.Man10h.core_service.service.VehicleService;
 import com.Man10h.core_service.util.SeatGenerator;
 import com.Man10h.core_service.util.TransactionalCacheEvictor;

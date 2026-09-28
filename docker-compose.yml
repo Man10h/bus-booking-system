@@ -201,6 +201,7 @@ services:
       EUREKA_CLIENT_SERVICE_URL: http://discovery-server:8761/eureka
       SPRING_SECURITY_OAUTH2_RESOURCE_SERVER_JWT_URI: http://auth-service:8000/auth/.well-known/jwks.json
       SPRING_KAFKA_SERVER: kafka:9092
+      SPRING_LIQUIBASE_ENABLED: "false"
       TZ: Asia/Ho_Chi_Minh
     networks:
       - bus-network

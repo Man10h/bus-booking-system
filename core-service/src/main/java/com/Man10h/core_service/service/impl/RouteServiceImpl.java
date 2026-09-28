@@ -15,7 +15,6 @@ import com.Man10h.core_service.util.TransactionalCacheEvictor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -39,7 +38,7 @@ public class RouteServiceImpl implements RouteService {
     private final RouteStopRepository routeStopRepository;
     private final ScheduleRepository scheduleRepository;
     private final TransactionalCacheEvictor transactionalCacheEvictor;
-    private final com.Man10h.core_service.service.MasterDataCacheService masterDataCacheService;
+    private final MasterDataCacheService masterDataCacheService;
     private final StringRedisTemplate stringRedisTemplate;
     private final org.springframework.transaction.support.TransactionTemplate transactionTemplate;
 

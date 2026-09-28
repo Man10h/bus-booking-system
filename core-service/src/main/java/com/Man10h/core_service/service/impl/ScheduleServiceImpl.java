@@ -293,23 +293,46 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .map(this::toDetailResponse).orElseThrow(() -> new ScheduleNotFoundException("Schedule not found"));
     }
 
+    private final com.github.benmanes.caffeine.cache.Cache<String, String> operatorUserIdCache =
+            com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
+                    .maximumSize(5000)
+                    .expireAfterWrite(Duration.ofMinutes(30))
+                    .build();
+
+    private String getOperatorIdByUserId(String userId) {
+        String cached = operatorUserIdCache.getIfPresent(userId);
+        if (cached != null) {
+            return cached;
+        }
+        Operator operator = operatorRepository.findByUserId(userId)
+                .orElseThrow(() -> new OperatorNotFoundException("Operator not found"));
+        operatorUserIdCache.put(userId, operator.getId());
+        return operator.getId();
+    }
+
     @Transactional
     public void cancelSchedule(String userId, Long id) {
-        Schedule schedule = scheduleRepository.findById(id).orElseThrow(() -> new ScheduleNotFoundException("Schedule not found"));
-        Operator operator = operatorRepository.findByUserId(userId).orElseThrow(() -> new OperatorNotFoundException("Operator not found"));
-        if(!Objects.equals(schedule.getOperatorId(), operator.getId())){
-            throw new AccessDeniedException("Operator does not have access to the schedule");
+        String operatorId = getOperatorIdByUserId(userId);
+
+        int updatedRows = scheduleRepository.cancelScheduleAtomic(id, operatorId);
+        if (updatedRows == 0) {
+            // Fallback for precise exception mapping when atomic update affected 0 rows
+            Schedule schedule = scheduleRepository.findById(id)
+                    .orElseThrow(() -> new ScheduleNotFoundException("Schedule not found"));
+
+            if (!Objects.equals(schedule.getOperatorId(), operatorId)) {
+                throw new AccessDeniedException("Operator does not have access to the schedule");
+            }
+            if (schedule.getStatus() != ScheduleStatus.OPEN) {
+                log.info("=====SCHEDULE IS NOT OPEN=====");
+                throw new IllegalStateException("Schedule is not open");
+            }
+            if (scheduleSeatRepository.existsBySchedule_IdAndStatusIn(id, List.of(ScheduleSeatStatus.BOOKED, ScheduleSeatStatus.HELD))) {
+                log.info("=====SCHEDULE SEAT IS HELD OR BOOKED=====");
+                throw new IllegalStateException("Schedule seat is in progress");
+            }
+            throw new IllegalStateException("Unable to cancel schedule");
         }
-        if(schedule.getStatus() != ScheduleStatus.OPEN){
-            log.info("=====SCHEDULE IS OPEN=====");
-            throw new IllegalStateException("Schedule is not open");
-        }
-        if(scheduleSeatRepository.existsBySchedule_IdAndStatusIn(id, List.of(ScheduleSeatStatus.BOOKED, ScheduleSeatStatus.HELD))){
-            log.info("=====SCHEDULE SEAT IS HELD OR BOOKED=====");
-            throw new IllegalStateException("Schedule seat is in progress");
-        }
-        schedule.setStatus(ScheduleStatus.CANCELLED);
-        scheduleRepository.save(schedule);
 
         transactionalCacheEvictor.evictAfterCommit("schedules");
     }
@@ -338,7 +361,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         if(!vehicle.getOperator().getUserId().equals(userId) || !route.getOperator().getUserId().equals(userId)){
             throw new AccessDeniedException("You not owned the vehicle or the route");
         }
-        Schedule schedule = scheduleRepository.findById(id).orElseThrow(() -> new ScheduleNotFoundException("Schedule not found"));
+        Schedule schedule = scheduleRepository.findByIdForUpdate(id).orElseThrow(() -> new ScheduleNotFoundException("Schedule not found"));
         if(!schedule.getOperatorId().equals(vehicle.getOperator().getId())){
             throw new AccessDeniedException("You not owned the schedule");
         }

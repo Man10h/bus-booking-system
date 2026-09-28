@@ -306,4 +306,107 @@ class ScheduleServiceImplTest {
 
         verify(stringRedisTemplate, never()).opsForValue();
     }
+
+    @Test
+    @DisplayName("cancelSchedule - Success when atomic update returns 1")
+    void cancelSchedule_Success() {
+        String userId = "user-1";
+        Long scheduleId = 500L;
+        Operator operator = new Operator("op-1", "user-1", "Phuong Trang", "0123456789", "0901234567", "avatar.jpg", null, null);
+
+        when(operatorRepository.findByUserId(userId)).thenReturn(Optional.of(operator));
+        when(scheduleRepository.cancelScheduleAtomic(scheduleId, "op-1")).thenReturn(1);
+
+        scheduleService.cancelSchedule(userId, scheduleId);
+
+        verify(scheduleRepository, times(1)).cancelScheduleAtomic(scheduleId, "op-1");
+        verify(transactionalCacheEvictor, times(1)).evictAfterCommit("schedules");
+    }
+
+    @Test
+    @DisplayName("cancelSchedule - Throws ScheduleNotFoundException when schedule does not exist")
+    void cancelSchedule_ScheduleNotFound_ThrowsException() {
+        String userId = "user-1";
+        Long scheduleId = 999L;
+        Operator operator = new Operator("op-1", "user-1", "Phuong Trang", "0123456789", "0901234567", "avatar.jpg", null, null);
+
+        when(operatorRepository.findByUserId(userId)).thenReturn(Optional.of(operator));
+        when(scheduleRepository.cancelScheduleAtomic(scheduleId, "op-1")).thenReturn(0);
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.empty());
+
+        assertThrows(ScheduleNotFoundException.class, () ->
+                scheduleService.cancelSchedule(userId, scheduleId)
+        );
+
+        verify(transactionalCacheEvictor, never()).evictAfterCommit(anyString());
+    }
+
+    @Test
+    @DisplayName("cancelSchedule - Throws AccessDeniedException when operator does not own schedule")
+    void cancelSchedule_NotOwner_ThrowsException() {
+        String userId = "user-2";
+        Long scheduleId = 500L;
+        Operator operator = new Operator("op-2", "user-2", "Thanh Buoi", "0123456789", "0901234567", "avatar.jpg", null, null);
+        Schedule schedule = Schedule.builder()
+                .id(scheduleId)
+                .operatorId("op-1")
+                .status(ScheduleStatus.OPEN)
+                .build();
+
+        when(operatorRepository.findByUserId(userId)).thenReturn(Optional.of(operator));
+        when(scheduleRepository.cancelScheduleAtomic(scheduleId, "op-2")).thenReturn(0);
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
+
+        assertThrows(AccessDeniedException.class, () ->
+                scheduleService.cancelSchedule(userId, scheduleId)
+        );
+    }
+
+    @Test
+    @DisplayName("cancelSchedule - Throws IllegalStateException when schedule is not OPEN")
+    void cancelSchedule_NotOpen_ThrowsException() {
+        String userId = "user-1";
+        Long scheduleId = 500L;
+        Operator operator = new Operator("op-1", "user-1", "Phuong Trang", "0123456789", "0901234567", "avatar.jpg", null, null);
+        Schedule schedule = Schedule.builder()
+                .id(scheduleId)
+                .operatorId("op-1")
+                .status(ScheduleStatus.RUNNING)
+                .build();
+
+        when(operatorRepository.findByUserId(userId)).thenReturn(Optional.of(operator));
+        when(scheduleRepository.cancelScheduleAtomic(scheduleId, "op-1")).thenReturn(0);
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
+                scheduleService.cancelSchedule(userId, scheduleId)
+        );
+
+        assertEquals("Schedule is not open", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("cancelSchedule - Throws IllegalStateException when seats are BOOKED or HELD")
+    void cancelSchedule_SeatsBookedOrHeld_ThrowsException() {
+        String userId = "user-1";
+        Long scheduleId = 500L;
+        Operator operator = new Operator("op-1", "user-1", "Phuong Trang", "0123456789", "0901234567", "avatar.jpg", null, null);
+        Schedule schedule = Schedule.builder()
+                .id(scheduleId)
+                .operatorId("op-1")
+                .status(ScheduleStatus.OPEN)
+                .build();
+
+        when(operatorRepository.findByUserId(userId)).thenReturn(Optional.of(operator));
+        when(scheduleRepository.cancelScheduleAtomic(scheduleId, "op-1")).thenReturn(0);
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
+        when(scheduleSeatRepository.existsBySchedule_IdAndStatusIn(scheduleId, List.of(ScheduleSeatStatus.BOOKED, ScheduleSeatStatus.HELD)))
+                .thenReturn(true);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
+                scheduleService.cancelSchedule(userId, scheduleId)
+        );
+
+        assertEquals("Schedule seat is in progress", ex.getMessage());
+    }
 }

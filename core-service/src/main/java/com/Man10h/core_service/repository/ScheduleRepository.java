@@ -2,6 +2,7 @@ package com.Man10h.core_service.repository;
 
 import com.Man10h.core_service.model.entities.Schedule;
 import com.Man10h.core_service.model.enums.ScheduleStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -13,6 +14,10 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ScheduleRepository extends JpaRepository<Schedule, Long>, JpaSpecificationExecutor<Schedule> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM Schedule s WHERE s.id = :id")
+    Optional<Schedule> findByIdForUpdate(@Param("id") Long id);
     @EntityGraph(attributePaths = {
             "vehicle",
             "route"
@@ -86,4 +91,25 @@ AND s.arrivalTime <= :now
 """)
     Long getScheduleCountByStatus(@Param("status") ScheduleStatus status,
                                   @Param("operatorId") String operatorId);
+
+    @Modifying(clearAutomatically = true)
+    @Query("""
+    UPDATE Schedule s
+    SET s.status = com.Man10h.core_service.model.enums.ScheduleStatus.CANCELLED
+    WHERE s.id = :scheduleId
+      AND s.operatorId = :operatorId
+      AND s.status = com.Man10h.core_service.model.enums.ScheduleStatus.OPEN
+      AND NOT EXISTS (
+          SELECT 1 FROM ScheduleSeat ss
+          WHERE ss.schedule.id = s.id
+            AND ss.status IN (
+                com.Man10h.core_service.model.enums.ScheduleSeatStatus.BOOKED,
+                com.Man10h.core_service.model.enums.ScheduleSeatStatus.HELD
+            )
+      )
+""")
+    int cancelScheduleAtomic(
+            @Param("scheduleId") Long scheduleId,
+            @Param("operatorId") String operatorId
+    );
 }

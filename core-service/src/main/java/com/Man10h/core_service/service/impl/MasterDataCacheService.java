@@ -1,4 +1,4 @@
-package com.Man10h.core_service.service;
+package com.Man10h.core_service.service.impl;
 
 import com.Man10h.core_service.model.entities.City;
 import com.Man10h.core_service.model.entities.Operator;

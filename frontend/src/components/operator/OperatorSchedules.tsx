@@ -27,6 +27,7 @@ export const OperatorSchedules: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [cancellingScheduleId, setCancellingScheduleId] = useState<number | null>(null);
 
   // Form states
   const [routeId, setRouteId] = useState<number | ''>('');
@@ -103,11 +104,15 @@ export const OperatorSchedules: React.FC = () => {
   };
 
   const handleCancelSchedule = async (scheduleId: number) => {
+    if (cancellingScheduleId !== null) return;
     if (window.confirm('Bạn có chắc chắn muốn hủy lịch trình chuyến xe này không? Khách hàng sẽ không thể đặt vé cho chuyến đi này nữa.')) {
       try {
+        setCancellingScheduleId(scheduleId);
         await cancelSchedule(scheduleId);
       } catch (err: any) {
         alert(err.message || 'Lỗi hủy lịch trình');
+      } finally {
+        setCancellingScheduleId(null);
       }
     }
   };
@@ -211,10 +216,19 @@ export const OperatorSchedules: React.FC = () => {
                         {s.status === 'OPEN' && (
                           <button
                             onClick={() => handleCancelSchedule(s.id)}
-                            className="p-1.5 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white rounded transition"
+                            disabled={cancellingScheduleId === s.id}
+                            className={`p-1.5 rounded transition ${
+                              cancellingScheduleId === s.id
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-red-50 hover:bg-red-500 text-red-500 hover:text-white'
+                            }`}
                             title="Hủy lịch trình"
                           >
-                            <Trash2 size={14} />
+                            {cancellingScheduleId === s.id ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={14} />
+                            )}
                           </button>
                         )}
                       </td>
